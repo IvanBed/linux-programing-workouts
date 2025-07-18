@@ -32,11 +32,11 @@ static void* print_lines(void* data) {
     struct sched_param thred_param;
     int policy = 0;
     int s = pthread_getschedparam(id, &policy, &thred_param);
-        if (s != 0)
-            printf("Problems");
+    if (s != 0)
+        printf("Problems");
     s = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-        if (s != 0)
-            handle_error_en(s, "pthread_setcancelstate");
+    if (s != 0)
+        handle_error_en(s, "pthread_setcancelstate");
 
     for (size_t i = 0; i < 10; i++)
         printf("%lu thread line # %d, priority is %d\n", id, line_num++, thred_param.sched_priority);
@@ -92,5 +92,4 @@ int main(int argc, char** argv) {
     free(mystack);  // Освобождаем стек
     pthread_attr_destroy(&attr);  // Уничтожаем атрибуты  
     exit(EXIT_SUCCESS);
-    return 0;
 }
