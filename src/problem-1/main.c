@@ -116,5 +116,6 @@ int main(int argc, char** argv) {
     free(mystack);  // Освобождаем стек
     pthread_attr_destroy(&attr);  // Уничтожаем атрибуты  
 	pthread_mutex_destroy(&m);
+	pthread_cond_destroy;
     exit(EXIT_SUCCESS);
 }
