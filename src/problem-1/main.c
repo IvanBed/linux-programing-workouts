@@ -9,7 +9,12 @@
 #define handle_error_en(en, msg) \
     do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
-// Решение тасков 1, 2, 3, 5, 6
+// Решение тасков 1, 2, 3, 5, 6, 10, 11, 12
+
+static pthread_mutex_t m;
+ 
+static pthread_cond_t cond;
+static int cond_predictate = 0;
 
 static int create_stack(void** mystack, size_t* mystacksize) {
     *mystacksize = 2 * PTHREAD_STACK_MIN;   
@@ -38,8 +43,16 @@ static void* print_lines(void* data) {
     if (s != 0)
         handle_error_en(s, "pthread_setcancelstate");
 
-    for (size_t i = 0; i < 10; i++)
-        printf("%lu thread line # %d, priority is %d\n", id, line_num++, thred_param.sched_priority);
+    for (size_t i = 0; i < 10; i++) {
+		pthread_mutex_lock(&m);
+		while (!cond_predictate)
+		    pthread_cond_wait(&cond, &m);
+		printf("%lu thread line # %d, priority is %d\n", id, line_num++, thred_param.sched_priority);
+		cond_predictate = 0;
+		pthread_cond_signal(&cond);
+		pthread_mutex_unlock(&m);
+	}
+        
     
     printf("line_num pointer points ----> %p\n", &line_num);
     
@@ -49,9 +62,11 @@ static void* print_lines(void* data) {
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     pthread_t thread1;
-    pthread_attr_t attr; 
+    pthread_attr_t attr;
+	pthread_mutex_init(&m, NULL);
+	pthread_cond_init(&cond, NULL);
     void *res;
-    
+ 
     void* mystack;                                                                            
     size_t stacksize;
  
@@ -73,8 +88,17 @@ int main(int argc, char** argv) {
     pthread_create(&thread1, &attr, print_lines, NULL);    
     
     int line_num = 1;
-    for (size_t i = 0; i < 10; i++)
-        printf("Main thread line # %d\n", line_num++);
+    for (size_t i = 0; i < 10; i++) {
+		pthread_mutex_lock(&m);
+		while (cond_predictate)
+		    pthread_cond_wait(&cond, &m);
+		
+		printf("Main thread line # %d\n", line_num++);
+		cond_predictate = 1;
+		pthread_cond_signal(&cond);
+		pthread_mutex_unlock(&m);
+	}
+        
     
     printf("Main thread line_num pointer points ----> %p\n", &line_num);
     
@@ -91,5 +115,6 @@ int main(int argc, char** argv) {
     
     free(mystack);  // Освобождаем стек
     pthread_attr_destroy(&attr);  // Уничтожаем атрибуты  
+	pthread_mutex_destroy(&m);
     exit(EXIT_SUCCESS);
 }
