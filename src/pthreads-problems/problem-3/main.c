@@ -82,7 +82,16 @@ static int add_to_tail(struct Node** list, char* val) {
 
 static int list_free(struct Node* list) {
     
-    
+	if (list == NULL) {
+		puts("List is empty");
+		return 4;
+	}
+	struct Node* temp = NULL;
+    while (list) {
+		temp = list;
+		list = list->next;
+		free(temp);
+	}
     
     return 0;
 }
@@ -90,7 +99,7 @@ static int list_free(struct Node* list) {
 static int print_list(struct Node* list) {
      if (list == NULL) {
          puts("List is empty");
-         return 1;
+         return 4;
      }
     struct Node* cur = list;
    
