@@ -10,7 +10,7 @@
 static struct Node {
 	char* line;
 	struct Node* next;
-};
+} Node;
 
 static int cpy_str(char** new_str, char* old_str) {
     if (old_str == NULL) {  
@@ -28,12 +28,7 @@ static int cpy_str(char** new_str, char* old_str) {
 } 
 
 static int new_node(struct Node** node, char* val) {
-	if (node == NULL) {  
-        puts("Node pointer is NULL.");
-        return 2;
-    }
-	
-	
+    
 	*node = (struct Node*) malloc(sizeof(struct Node));
 	
 	if (*node == NULL) {
@@ -107,7 +102,7 @@ static int print_list(struct Node* list) {
 }
 
 static int read_lines(struct Node** list) {
-	if (node == NULL) {  
+	if (list == NULL) {  
         puts("List pointer is null. Please initialize the list!");
         return 3;
     }
@@ -126,14 +121,15 @@ static int read_lines(struct Node** list) {
 	
 }
 
+// Пока набросок
 
 static void* read_lines_mt(void* data) {
-	
-	if (node == NULL) {  
+	struct Node** list = (struct Node**) data;
+	if (list == NULL) {  
         puts("List pointer is null. Please initialize the list!");
         return NULL;
     }
-	Node** list = (Node**) data;
+
 	char cur_line[81];
 	while (true) {
 	    fgets(cur_line, sizeof(cur_line), stdin);
@@ -150,6 +146,9 @@ static void* read_lines_mt(void* data) {
 }
 
 
+
+// Пока набросок
+
 static int bubble_sort(struct Node** list) {
 	
 	struct Node* cur_i = *list;
@@ -159,8 +158,8 @@ static int bubble_sort(struct Node** list) {
 	while(cur_i) {
 		
 		while(cur_j) {
-			if (prev_j->val > cur_j->val) {
-				swap(prev_j, cur_j);
+			if (prev_j->line > cur_j->line) {
+				//swap(prev_j, cur_j);
 			}
 			cur_j = cur_j->next;
 		}
@@ -177,10 +176,10 @@ static int bubble_sort(struct Node** list) {
 int main(int argc, char** argv) {
 	
 	struct Node* list = NULL;
-	pthread_t read_tread;
-	pthread_create(read_tread, NULL, read_lines_mt, (void*)&list);
+	//pthread_t read_tread;
+	//pthread_create(read_tread, NULL, read_lines_mt, (void*)&list);
     
-	//int res = read_lines(&list);
+	int res = read_lines(&list);
 	
 	return res;
 }
