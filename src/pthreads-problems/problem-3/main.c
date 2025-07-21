@@ -7,10 +7,10 @@
 #define true 1
 #define false 0
 
-static struct Node {
+struct Node {
 	char* line;
 	struct Node* next;
-} Node;
+};
 
 static int cpy_str(char** new_str, char* old_str) {
     if (old_str == NULL) {  
