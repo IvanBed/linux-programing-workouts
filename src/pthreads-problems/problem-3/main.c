@@ -10,6 +10,7 @@
 struct Node {
 	char* line;
 	struct Node* next;
+	struct Node* prev;
 };
 
 static int cpy_str(char** new_str, char* old_str) {
@@ -40,6 +41,7 @@ static int new_node(struct Node** node, char* val) {
     cpy_str(&str, val);
 	(*node)->line = str;
 	(*node)->next = NULL;
+	(*node)->prev = NULL;
 	return 0;
 }
 
@@ -56,6 +58,7 @@ static int add_to_head(struct Node** list, char* val) {
 		*list = node;
 	else {
 		node->next = (*list)->next;
+		node->prev = *list;
 		(*list)->next = node;
 	}
 	return 0;
@@ -76,6 +79,7 @@ static int add_to_tail(struct Node** list, char* val) {
 			cur = cur->next;
 		}
 		cur->next = node;
+		node->prev = cur;
 	}
 	return 0;
 }
