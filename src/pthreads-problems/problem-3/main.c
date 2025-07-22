@@ -201,47 +201,6 @@ static int swap(struct Node** l_node, struct Node** r_node) {
 }
 
 
-
-// Пока набросок
-
-static int bubble_sort(struct Node** list) {
-
-    if (list == NULL || *list == NULL || (*list)->next == NULL)
-        return 1;  
-
-    int is_swapped;
-    struct Node* end = NULL; 
-
-    do {
-        is_swapped = 0;
-        struct Node* current = *list;
-
-        while (current->next != end) {
-            if (strcmp(current->line, current->next->line) > 0) {
-                
-                struct Node* next_node = current->next;
-
-                 
-                if (current == *list) {
-                    *list = next_node;
-                }
-
-               
-                swap(&current, &next_node);
-                is_swapped = 1;
-
-              
-                current = next_node;
-            }
-            current = current->next;
-        }
-        end = current; 
-    } while (is_swapped);
-
-    return 0;
-}
-
-
 static void* bubble_sort_mt(void* data) {
 	puts("bubble_sort_mt");
 	while(1) {	
