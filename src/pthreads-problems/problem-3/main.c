@@ -3,9 +3,16 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <pthread.h>
+#include <unistd.h>
+
 
 #define true 1
 #define false 0
+
+static pthread_mutex_t m;
+static pthread_cond_t cond;
+static int cond_predicate = 0;
+
 
 struct Node {
 	char* line;
@@ -84,6 +91,15 @@ static int add_to_tail(struct Node** list, char* val) {
 	return 0;
 }
 
+
+static int create_list(struct Node** list) {
+    
+    int res = add_to_head(list, "start_list_ptr");
+    
+    return res;
+}
+
+
 static int list_free(struct Node* list) {
     
 	if (list == NULL) {
@@ -101,11 +117,11 @@ static int list_free(struct Node* list) {
 }
 
 static int print_list(struct Node* list) {
-     if (list == NULL) {
+     if (list == NULL || list->next == NULL) {
          puts("List is empty");
          return 4;
      }
-    struct Node* cur = list;
+    struct Node* cur = list->next;
    
     while (cur) {
         printf("current node value: %s\n", cur->line);
@@ -115,12 +131,13 @@ static int print_list(struct Node* list) {
 }
 
 static int read_lines(struct Node** list) {
-	if (list == NULL) {  
-        puts("List pointer is null. Please initialize the list!");
-        return 3;
-    }
+	
 	char cur_line[81];
 	while (true) {
+	    //pthread_mutex_lock(&m);
+	    //while(cond_predicate == 1)
+		//    pthread_cond_wait(&cond, &m);
+	    //cond_predicate = 1;
 	    fgets(cur_line, sizeof(cur_line), stdin);
 		cur_line[strcspn(cur_line, "\n")] = '\0';
 		if (strcmp(cur_line, "c_exit") == 0) {
@@ -130,8 +147,13 @@ static int read_lines(struct Node** list) {
 			print_list(*list);
 		} else 
 		    add_to_tail(list, cur_line);
+		//cond_predicate = 0;
+		//printf("cond pred %d\n", cond_predicate);
+		//pthread_cond_signal(&cond);
+	   // pthread_mutex_unlock(&m);
 	}	
 	
+
 }
 
 // Пока набросок
@@ -159,40 +181,129 @@ static void* read_lines_mt(void* data) {
 }
 
 
+static int swap(struct Node** l_node, struct Node** r_node) {
+	if (l_node == NULL || r_node == NULL)
+		return 1;
+
+	(*l_node)->next = (*r_node)->next;
+	if ((*r_node)->next != NULL)
+		(*r_node)->next->prev = *l_node;
+	
+	
+	if ((*l_node)->prev != NULL)
+	    (*l_node)->prev->next = *r_node;
+	(*r_node)->prev = (*l_node)->prev;
+	
+	
+	(*l_node)->prev = *r_node;
+	(*r_node)->next = *l_node;
+	return 0;
+}
+
+
 
 // Пока набросок
 
 static int bubble_sort(struct Node** list) {
-	
-	struct Node* cur_i = *list;
-	struct Node* prev_j = cur_i;
-	struct Node* cur_j = cur_i->next;
-	int is_swaped = false;
-	while(cur_i) {
-		
-		while(cur_j) {
-			if (prev_j->line > cur_j->line) {
-				//swap(prev_j, cur_j);
+
+    if (list == NULL || *list == NULL || (*list)->next == NULL)
+        return 1;  
+
+    int is_swapped;
+    struct Node* end = NULL; 
+
+    do {
+        is_swapped = 0;
+        struct Node* current = *list;
+
+        while (current->next != end) {
+            if (strcmp(current->line, current->next->line) > 0) {
+                
+                struct Node* next_node = current->next;
+
+                 
+                if (current == *list) {
+                    *list = next_node;
+                }
+
+               
+                swap(&current, &next_node);
+                is_swapped = 1;
+
+              
+                current = next_node;
+            }
+            current = current->next;
+        }
+        end = current; 
+    } while (is_swapped);
+
+    return 0;
+}
+
+
+static void* bubble_sort_mt(void* data) {
+	puts("bubble_sort_mt");
+	while(1) {	
+		pthread_mutex_lock(&m);
+		struct Node** list = (struct Node**) data;
+		while (list == NULL || *list == NULL || (*list)->next == NULL)
+			sleep(1);
+	 
+		cond_predicate = 1;
+	 
+		int is_swapped;
+		struct Node* end = NULL; 
+
+		do {
+			is_swapped = 0;
+			struct Node* current = *list;
+
+			while (current->next != end) {
+				if (strcmp(current->line, current->next->line) > 0) {
+					
+					struct Node* next_node = current->next;
+
+					 
+					if (current == *list) {
+						*list = next_node;
+					}
+
+				   
+					swap(&current, &next_node);
+					is_swapped = 1;
+
+				  
+					current = next_node;
+				}
+				current = current->next;
 			}
-			cur_j = cur_j->next;
-		}
-		if (!is_swaped) 
-			break;
-		cur_i = cur_i->next;
+			end = current; 
+		} while (is_swapped);
+		cond_predicate = 0;
+		 
+		pthread_cond_signal(&cond);
+		pthread_mutex_unlock(&m);
+		sleep(30); 
 	}
 	
+		return NULL;
 	
-	return 1;
 }
 
 
 int main(int argc, char** argv) {
 	
 	struct Node* list = NULL;
-	//pthread_t read_tread;
-	//pthread_create(read_tread, NULL, read_lines_mt, (void*)&list);
+	pthread_t sort_tread;
+	pthread_mutex_init(&m, NULL);
+	pthread_cond_init(&cond, NULL);
+	
+	pthread_create(&sort_tread, NULL, bubble_sort_mt, (void*)&list);
     
 	int res = read_lines(&list);
-	
-	return res;
+
+	pthread_mutex_destroy(&m);
+	pthread_cond_destroy(&cond);
+	return 0;
 }
