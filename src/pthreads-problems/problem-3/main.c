@@ -104,7 +104,7 @@ static int list_free(struct Node* list) {
     
 	if (list == NULL) {
 		puts("List is empty");
-		return 4;
+		return 1;
 	}
 	struct Node* temp = NULL;
     while (list) {
@@ -119,7 +119,7 @@ static int list_free(struct Node* list) {
 static int print_list(struct Node* list) {
      if (list == NULL || list->next == NULL) {
          puts("List is empty");
-         return 4;
+         return 1;
      }
     struct Node* cur = list->next;
    
@@ -130,9 +130,11 @@ static int print_list(struct Node* list) {
     return 0;
 }
 
+
 static int read_lines(struct Node** list) {
 	
 	char cur_line[81];
+	int res = 0;
 	while (true) {
 	    fgets(cur_line, sizeof(cur_line), stdin);
 		cur_line[strcspn(cur_line, "\n")] = '\0';
@@ -145,47 +147,17 @@ static int read_lines(struct Node** list) {
 		puts("operations with the list...");
 		cond_predicate = 1;
 		if (strcmp(cur_line, "c_print") == 0) {
-			print_list(*list);
+			res = print_list(*list);
 		} else 
-		    add_to_tail(list, cur_line);
+		    res = add_to_tail(list, cur_line); 
 		cond_predicate = 0;
 		pthread_cond_signal(&cond);
 		pthread_mutex_unlock(&m);
 		puts("fullfilled.");
 	}	
 	
+	return res;
 
-}
-
-// Пока набросок
-
-static void* read_lines_mt(void* data) {
-	struct Node** list = (struct Node**) data;
-	if (list == NULL) {  
-        puts("List pointer is null. Please initialize the list!");
-        return NULL;
-    }
-
-	char cur_line[81];
-	while (true) {
-	    fgets(cur_line, sizeof(cur_line), stdin);
-		cur_line[strcspn(cur_line, "\n")] = '\0';
-		if (strcmp(cur_line, "c_exit") == 0) {
-			break;
-		}
-		pthread_mutex_lock(&m);
-		while (cond_predicate == 1)
-			pthread_cond_wait(&cond, &m);
-		cond_predicate = 1;
-		if (strcmp(cur_line, "c_print") == 0) {
-			print_list(*list);
-		} else 
-		    add_to_tail(list, cur_line);
-		cond_predicate = 0;
-		pthread_cond_signal(&cond);
-		pthread_mutex_unlock(&m);
-	}	
-	
 }
 
 
@@ -253,8 +225,8 @@ static void* bubble_sort_mt(void* data) {
 		 
 		pthread_cond_signal(&cond);
 		pthread_mutex_unlock(&m);
-		puts("sorting is end... sleep 30");
-		sleep(30); 
+		puts("sorting is end... sleep 5");
+		sleep(5); 
 	}
 	
 		return NULL;
@@ -275,5 +247,6 @@ int main(int argc, char** argv) {
 
 	pthread_mutex_destroy(&m);
 	pthread_cond_destroy(&cond);
-	return 0;
+	list_free(list);
+	return res;
 }
