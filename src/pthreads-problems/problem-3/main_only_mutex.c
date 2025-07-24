@@ -9,6 +9,7 @@
 #define false 0
 
 static pthread_mutex_t m;
+static volatile int stop_sort_thread = false;
 
 struct Node {
     char* line;
@@ -69,7 +70,6 @@ static int add_to_head(struct Node** list, char* val) {
     return 0;
 }
 
-
 static int add_to_tail(struct Node** list, char* val) {
     struct Node* node; 
     int res = new_node(&node, val);
@@ -109,11 +109,11 @@ static int list_free(struct Node* list) {
     return 0;
 }
 
-static int print_list(struct Node* list) {
-    if (list == NULL || list->next == NULL) {
-        perror("List is empty");
-        return 1;
-    }
+static int print_list(const struct Node* list) {
+	if (list == NULL) {
+		fprintf(stderr, "List is empty\n");
+		return 1;
+	}
     
     struct Node* cur = list;
     while (cur) {
@@ -151,7 +151,7 @@ static int read_lines(struct Node** list) {
         pthread_mutex_unlock(&m);
        
     }    
-    
+    stop_sort_thread = true;
     return res;
 }
 
@@ -180,8 +180,7 @@ static int swap(struct Node** l_node, struct Node** r_node) {
 }
 
 static void* bubble_sort_mt(void* data) {
-    
-    while (1) {    
+    while (!stop_sort_thread) {    
         struct Node** list = (struct Node**)data;
         while (list == NULL || *list == NULL || (*list)->next == NULL) {
             sleep(1);
@@ -217,7 +216,7 @@ static void* bubble_sort_mt(void* data) {
 
         sleep(5);
     }
-    
+    puts("Stop sorting thread.");
     return NULL;
 }
 
@@ -226,17 +225,21 @@ int main(int argc, char** argv) {
     pthread_t sort_tread;
     
     if (pthread_mutex_init(&m, NULL) != 0) {
-        perror("pthread_mutex_init() error");
+        perror("pthread_mutex_init() error.");
         return 1;
     }
-   
-    pthread_create(&sort_tread, NULL, bubble_sort_mt, (void*)&list);
+	
+	if (pthread_create(&sort_tread, NULL, bubble_sort_mt, (void*)&list)) {
+        perror("pthread_create() error.");
+        return 1;
+    }
+	
     puts("Lets start...");
     int res = read_lines(&list);
-
+	
+	pthread_join(sort_tread, NULL);
     pthread_mutex_destroy(&m);
-
+	
     list_free(list);
-    
     return res;
 }
