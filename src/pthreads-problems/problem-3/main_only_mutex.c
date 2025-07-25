@@ -109,7 +109,7 @@ static int list_free(struct Node* list) {
     return 0;
 }
 
-static int print_list(const struct Node* list) {
+static int print_list(struct Node* list) {
 	if (list == NULL) {
 		fprintf(stderr, "List is empty\n");
 		return 1;
