@@ -86,8 +86,7 @@ int main(int argc, char** argv) {
 	pthread_join(thread_c, NULL);
 	pthread_join(thread_widget, NULL);
 	
-	if (sem_destroy(&a_sem) != 0) {
-	}
+	if (sem_destroy(&a_sem) != 0) {}
 	if (sem_destroy(&widget_sem_1) != 0) {}
 	if (sem_destroy(&widget_sem_2) != 0) {}
 	
