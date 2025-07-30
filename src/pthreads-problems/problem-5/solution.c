@@ -13,7 +13,6 @@ static sem_t b_sem;
 static sem_t widget_sem_1;
 static sem_t widget_sem_2;
 
-
 static void* makeA(void* data) {
 	while(!exit_signal) {
     	sleep(1);
@@ -61,7 +60,6 @@ static void* makeWidget(void* data) {
 	pthread_exit(NULL);
 }
 
-
 int main(int argc, char** argv) {
 	
 	pthread_t thread_a, thread_b, thread_ab, thread_c, thread_widget;
@@ -100,7 +98,7 @@ int main(int argc, char** argv) {
 	if (pthread_create(&thread_widget, NULL, makeWidget, NULL) != 0) {
 		perror("Unable to create thread for function makeWidget.");
 	}
-
+	
 	pthread_join(thread_a, NULL);
 	pthread_join(thread_b, NULL);
 	pthread_join(thread_ab, NULL);
