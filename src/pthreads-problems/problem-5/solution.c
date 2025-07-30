@@ -107,6 +107,7 @@ int main(int argc, char** argv) {
 	if (pthread_create(&thread_c, NULL, makeC, NULL) != 0) {
 		perror("Unable to create thread for function makeC.");
 	}
+	
 	if (pthread_create(&thread_widget, NULL, makeWidget, NULL) != 0) {
 		perror("Unable to create thread for function makeWidget.");
 	}
@@ -116,6 +117,8 @@ int main(int argc, char** argv) {
 	pthread_join(thread_ab, NULL);
 	pthread_join(thread_c, NULL);
 	pthread_join(thread_widget, NULL);
+	
+	puts("All threads are terminated.");
 	
 	if (sem_destroy(&a_sem) != 0) {
 		perror("Unable to destroy a_sem.");
