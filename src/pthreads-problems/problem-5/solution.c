@@ -74,6 +74,7 @@ static void* makeWidget(void* data) {
 
 int main(int argc, char** argv) {
 	signal(SIGINT, sigint_handler);
+	signal(SIGTERM, sigint_handler);
 	pthread_t thread_a, thread_b, thread_ab, thread_c, thread_widget;
 		
 	if (sem_init(&a_sem, 0, 0) != 0) {
