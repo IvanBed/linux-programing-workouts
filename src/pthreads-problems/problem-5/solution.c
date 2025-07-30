@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdatomic.h>
+#include <signal.h>
 
 static atomic_int exit_signal = 0;
 static sem_t a_sem;
@@ -13,12 +14,19 @@ static sem_t b_sem;
 static sem_t widget_sem_1;
 static sem_t widget_sem_2;
 
+void sigint_handler(int sig) {
+    puts("SIGINT signal recived. Terminated...");
+    exit_signal = 1;
+    puts("Flag exit_signal is TRUE.");
+}
+
 static void* makeA(void* data) {
 	while(!exit_signal) {
     	sleep(1);
 		puts("A is ready!");
     	sem_post(&a_sem);
 	}
+	puts("Thread makeA is terminated.");
 	pthread_exit(NULL);
 }
 
@@ -29,6 +37,7 @@ static void* makeB(void* data) {
     	puts("B is ready!");
 		sem_post(&b_sem);
 	}
+	puts("Thread makeB is terminated.");
 	pthread_exit(NULL);
 }
 
@@ -39,6 +48,7 @@ static void* makeAB(void* data) {
     	puts("AB is ready!");
 		sem_post(&widget_sem_1);
 	}
+	puts("Thread makeAB is terminated.");
 	pthread_exit(NULL);
 }
 
@@ -48,6 +58,7 @@ static void* makeC(void* data) {
     	puts("C is ready!");
     	sem_post(&widget_sem_2); 
     }
+	puts("Thread makeC is terminated.");
 	pthread_exit(NULL);
 }
 
@@ -57,11 +68,12 @@ static void* makeWidget(void* data) {
 		sem_wait(&widget_sem_2);
     	puts("Widget is ready!");
 	}
+	puts("Thread makeWidget is terminated.");
 	pthread_exit(NULL);
 }
 
 int main(int argc, char** argv) {
-	
+	signal(SIGINT, sigint_handler);
 	pthread_t thread_a, thread_b, thread_ab, thread_c, thread_widget;
 		
 	if (sem_init(&a_sem, 0, 0) != 0) {
