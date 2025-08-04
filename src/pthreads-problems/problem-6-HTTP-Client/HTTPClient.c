@@ -55,7 +55,6 @@ static int make_node(struct Node** node, char* val) {
 	
 }
 
-
 static int add(struct Node** head, char* val) {
 
 	struct Node* new_node;
@@ -80,17 +79,18 @@ static int add(struct Node** head, char* val) {
 	
 }
 
-
 static int parseURL(struct Node** list, char* URLstr) {
 
 	char str_buff[2048];
 	size_t buff_ptr = 0;
 	size_t url_len = strlen(URLstr);
 	memset(str_buff, 0, 2048 * sizeof(char));
-	
+	printf("%d\n", url_len);
 	for (size_t i = 0; i < url_len && buff_ptr < 2047; i++) {
 	 
 		if (URLstr[i] == '/' || i + 1 == url_len) {
+                        if (i + 1 == url_len)
+                            str_buff[buff_ptr++] = URLstr[i];
 			str_buff[++buff_ptr] = '\0';
 			int res_of_add = add(list, str_buff);
 			memset(str_buff, 0, buff_ptr * sizeof(char));
@@ -132,41 +132,39 @@ int free_list(struct Node* list) {
     }
 }
 
-
-// Разбить на две функциии, одна получает ip по доменному имени, другая устанавливает соединение.
-static int create_socket_to_domain (char* domain_name, int* socket_id) {
+static int get_ip_from_domain(char* domain_name, const char* port, struct addrinfo** result) {
 	struct addrinfo hints;
-    struct addrinfo *result, *rp;
-    int sfd, s, j;
-    size_t len;
-  
-    char buf[BUF_SIZE];
-
-   /* Obtain address(es) matching host/port */
-
-    memset(&hints, 0, sizeof(struct addrinfo));
+	int err;
+	memset(&hints, 0, sizeof(struct addrinfo));
+	
     hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
-    hints.ai_socktype = SOCK_STREAM ; /* Datagram socket */
+    hints.ai_socktype = SOCK_STREAM ; /* TCP socket */
     hints.ai_flags = 0;
     hints.ai_protocol = 0;          /* Any protocol */
 
-    s = getaddrinfo(domain_name, "80", &hints, &result);
-    if (s != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
-        exit(EXIT_FAILURE);
+    err = getaddrinfo(domain_name, port, &hints, result);
+	if (err != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err));
+        return 1;
     }
+	
+	//freeaddrinfo(&hints);
+	return 0;
+}
 
-    for (rp = result; rp != NULL; rp = rp->ai_next) {
-        sfd = socket(rp->ai_family, rp->ai_socktype,
+static int try_connect(struct addrinfo* addr_info, int* sockfd) {
+	struct addrinfo* rp;
+	for (rp = addr_info; rp != NULL; rp = rp->ai_next) {
+        *sockfd = socket(rp->ai_family, rp->ai_socktype,
             rp->ai_protocol);
-        if (sfd == -1)
+        if (*sockfd == -1)
             continue;
 
-        if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1) {
+        if (connect(*sockfd, rp->ai_addr, rp->ai_addrlen) != -1) {
 		    puts("Success");
 			break; 
 	    }
-        close(sfd);
+		close(*sockfd);
     }
 	
     if (rp == NULL) {              
@@ -174,9 +172,7 @@ static int create_socket_to_domain (char* domain_name, int* socket_id) {
         return 1;
     }
 
-	*socket_id = sfd;
-    freeaddrinfo(result);           
-    return 0;
+	return 0;
 }
 
 
@@ -190,29 +186,51 @@ int main(int argc, char** argv) {
     char* URL = argv[1];
     struct Node* list = NULL;
     int sockfd = 0;
-
-    int parse_res = parseURL(&list, URL);
-    struct Node* domain_name_node = get_node(list, 2);
+	struct addrinfo* result;
+	
+	
+    int err = parseURL(&list, URL);
+    if (err != 0) {
+		fprintf(stderr, "Problem with parsing URL.\n");
+		return 1;
+	}
+	
+	struct Node* domain_name_node = get_node(list, 2);
 
     if (domain_name_node == NULL)
         return 1;
 	
     char* domain_name = domain_name_node->str_val;
     puts(domain_name);
-    create_socket_to_domain(domain_name, &sockfd);
+    
+	err = get_ip_from_domain(domain_name, "80", &result);
+	if (err != 0) {
+		fprintf(stderr, "Can not resolve the domain name.\n");
+		return 1;
+	}
 
-    char *msg = "GET /ru/articles/931410/ HTTP/1.1 \
-                        Host: www.habr.com \
-                        User-Agent: Mozilla/5.0 \
-                        Accept: application/json";
+	err = try_connect(result, &sockfd);
+	if (err != 0) {
+		fprintf(stderr, "Can not connect to the host.\n");
+		return 1;
+	}
+	
+	freeaddrinfo(result);
+	
+    const char* msg = 
+        "GET / HTTP/1.1\r\n"
+        "Host: www.ccfit.nsu.ru\r\n"
+        "Connection: close\r\n"
+        "\r\n";
     int len, bytes_sent;
 
     len = strlen(msg);
     bytes_sent = send(sockfd, msg, len, 0);
-    char buff[256];
-    len = 256;
+    printf ("bytes sent \n", bytes_sent);
+    char buff[4096];
+    len = 4096;
     size_t count;
-	
+    
     while ((count = recv(sockfd, (void*) buff, len, 0)) != 0) {
         puts(buff);
         if (count == -1) {
@@ -227,4 +245,6 @@ int main(int argc, char** argv) {
             }
         }
     }
+    close(sockfd);
+	free_list(list);
 }
