@@ -5,23 +5,19 @@
 // Вынести в заголовчной файл.
 /*
 struct StoreNode {
-    
     struct StoreNode *next;
     struct StoreNode *prev;
     int val;
-
-}
+};
 
 struct Store {
-
     struct StoreNode *head;
+	struct StoreNode *tail;
     size_t size;
     size_t capacity;    
-}
+};
 
 */
-
-
 int store_init(struct Store **store, size_t capacity) {
 
     *store = (struct Store*)malloc(sizeof(struct Store));
@@ -31,6 +27,8 @@ int store_init(struct Store **store, size_t capacity) {
     }
     (*store)->capacity = capacity;
     (*store)->size = 0;
+    (*store)->head = NULL;
+	(*store)->tail = NULL;
     return 0;
 }
 
@@ -51,66 +49,117 @@ int make_node(struct StoreNode** cur_node, int val) {
 }
 
 
-int add_val(struct StoreNode** store_inst, int val) {
-
+int add_val(struct Store **store_inst, int val) {
+	if (store_inst == NULL || *store_inst == NULL) {
+        puts("store_inst is NULL");
+        return 1;
+    }
     struct StoreNode *new_node = NULL;
     int res = make_node(&new_node, val);
     if (res != 0) {
         puts("Could not make a new node\n");
         return 1;
     }
-
-    if (store_inst == NULL) {
-       *store_inst = new_node;
-
+    
+	struct StoreNode *head = (*store_inst)->head;
+    if ((*store_inst)->head == NULL) {
+       (*store_inst)->head = new_node;
+        (*store_inst)->tail = new_node; 
     } else {
-        new_node->prev = *store_inst;
-        (*store_inst)->next = new_node;
-        (*store_inst) = new_node;
+        new_node->next = (*store_inst)->head;
+        (*store_inst)->head->prev = new_node;
+        (*store_inst)->head = new_node;
+       
+    }
+    (*store_inst)->size++;
+    return 0;
 
+}
+
+
+int get_val(struct Store **store_inst, int* ret_val) {
+    if (store_inst == NULL || *store_inst == NULL) {
+        puts("store_inst is NULL");
+        return 1;
+    }
+    struct StoreNode *cur = (*store_inst)->head;
+	 
+    if (cur == NULL) {
+        puts("cur is NULL");
+        return 1;
+    }
+ 
+    while (cur->next != NULL) cur = cur->next;
+	struct StoreNode *last_node = cur;
+	if (last_node->prev != NULL)
+        last_node->prev->next = NULL;
+	else 
+	    (*store_inst)->head = NULL;
+	
+	*ret_val = last_node->val;
+    
+    free(last_node);
+	last_node = NULL; 
+	(*store_inst)->size--;
+    return 0;
+}
+
+
+int get_val2(struct Store **store_inst, int* ret_val) {
+    if (store_inst == NULL || *store_inst == NULL) {
+        puts("store_inst is NULL");
+        return 1;
+    }
+    struct StoreNode *last_node = (*store_inst)->tail;
+	 
+    if (last_node == NULL) {
+        puts("last_node is NULL");
+        return 1;
     }
 
-    return 0;
-
-}
-
-
-int get_val(struct StoreNode** store_inst, int* ret_val) {
-
-    struct StoreNode *cur = *store_inst;
-    while (cur->next != NULL) cur = cur->next;
+	if (last_node->prev != NULL) {
+        last_node->prev->next = NULL;
+	    (*store_inst)->tail = last_node->prev;
+	} else {
+		(*store_inst)->head = NULL;
+		(*store_inst)->tail = NULL;
+	}  
+	    
+	*ret_val = last_node->val;
     
-    *ret_val = cur->val;
-    struct StoreNode *temp = cur;
-    cur->prev->next = NULL;
-    free(temp);
+    free(last_node);
+	(*store_inst)->size--;
     return 0;
-
 }
 
 
-int free_store(struct StoreNode* store_inst) {
+int free_store(struct Store *store_inst) {
     if (store_inst == NULL) {
         puts("Store is empty\n"); 
+		return 1;
     }
-    struct StoreNode *cur = store_inst;
+    struct StoreNode *cur = store_inst->head;
+	struct StoreNode *temp = NULL;
     while (cur != NULL) {
-        struct StoreNode *temp = cur;
+        temp = cur;
         cur = cur->next;
         free(temp);
+        temp = NULL;
+		store_inst->size--;
     } 
-
+    store_inst->head = NULL;
     return 0;
 }
 
 
-void print_list(struct StoreNode *head) {
-    while (head) {
-        printf("val %d\n", head->val);
-        head = head->next;
+void print_list(struct Store *store_inst) {
+	
+	struct StoreNode *cur = store_inst->head;
+    while (cur) {
+        printf("val %d\n", cur->val);
+        cur = cur->next;
     }
-
-
 }
+
 
 int main() {return 0;}
