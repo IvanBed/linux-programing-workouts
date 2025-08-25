@@ -162,4 +162,4 @@ void print_list(struct Store *store_inst) {
 }
 
 
-int main() {return 0;}
+//int main() {return 0;}
