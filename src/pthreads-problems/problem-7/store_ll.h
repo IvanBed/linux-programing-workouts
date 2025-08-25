@@ -12,8 +12,10 @@ struct StoreNode {
 struct Store {
 
     struct StoreNode *head;
+	struct StoreNode *tail;
     size_t size;
-    size_t capacity;    
+    size_t capacity; 
+	
 };
 
 int store_init(struct Store**, size_t);
