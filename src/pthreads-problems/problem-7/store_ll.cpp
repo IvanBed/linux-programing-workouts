@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "store_ll.h"
 #include <cstdlib>
+#include <errno.h>
 
 // Вынести в заголовчной файл.
 /*
@@ -22,7 +23,7 @@ int store_init(struct Store **store, size_t capacity) {
 
     *store = (struct Store*)malloc(sizeof(struct Store));
     if (*store == NULL) {
-        puts( "Could not allocate memory fo store instance\n");
+        fprintf(stderr, "Could not allocate memory fo store instance.\n");
         return 1;
     }
     (*store)->capacity = capacity;
@@ -37,7 +38,7 @@ int make_node(struct StoreNode** cur_node, int val) {
 
     *cur_node = (struct StoreNode*) malloc(sizeof(struct StoreNode));
     if (*cur_node == NULL) {
-        puts("Could not allocate memory for a new node\n");
+        fprintf(stderr, "Could not allocate memory for a new node.\n");
         return 1;
     }
     
@@ -51,13 +52,13 @@ int make_node(struct StoreNode** cur_node, int val) {
 
 int add_val(struct Store **store_inst, int val) {
 	if (store_inst == NULL || *store_inst == NULL) {
-        puts("store_inst is NULL");
+        fprintf(stderr, "store_inst is NULL");
         return 1;
     }
     struct StoreNode *new_node = NULL;
     int res = make_node(&new_node, val);
     if (res != 0) {
-        puts("Could not make a new node\n");
+        fprintf(stderr, "Could not make a new node.\n");
         return 1;
     }
     
@@ -79,41 +80,13 @@ int add_val(struct Store **store_inst, int val) {
 
 int get_val(struct Store **store_inst, int* ret_val) {
     if (store_inst == NULL || *store_inst == NULL) {
-        puts("store_inst is NULL");
-        return 1;
-    }
-    struct StoreNode *cur = (*store_inst)->head;
-	 
-    if (cur == NULL) {
-        puts("cur is NULL");
-        return 1;
-    }
- 
-    while (cur->next != NULL) cur = cur->next;
-	struct StoreNode *last_node = cur;
-	if (last_node->prev != NULL)
-        last_node->prev->next = NULL;
-	else 
-	    (*store_inst)->head = NULL;
-	
-	*ret_val = last_node->val;
-    
-    free(last_node);
-	last_node = NULL; 
-	(*store_inst)->size--;
-    return 0;
-}
-
-
-int get_val2(struct Store **store_inst, int* ret_val) {
-    if (store_inst == NULL || *store_inst == NULL) {
-        puts("store_inst is NULL");
+        fprintf(stderr, "Store_inst is NULL.\n");
         return 1;
     }
     struct StoreNode *last_node = (*store_inst)->tail;
 	 
     if (last_node == NULL) {
-        puts("last_node is NULL");
+        fprintf(stderr, "Last node is NULL.\n");
         return 1;
     }
 
@@ -133,9 +106,37 @@ int get_val2(struct Store **store_inst, int* ret_val) {
 }
 
 
+int get_val2(struct Store **store_inst, int* ret_val) {
+    if (store_inst == NULL || *store_inst == NULL) {
+        fprintf(stderr, "Store is NULL.\n");
+        return 1;
+    }
+    struct StoreNode *cur = (*store_inst)->head;
+	 
+    if (cur == NULL) {
+        fprintf(stderr, "Current node is NULL.\n");
+        return 1;
+    }
+ 
+    while (cur->next != NULL) cur = cur->next;
+	struct StoreNode *last_node = cur;
+	if (last_node->prev != NULL)
+        last_node->prev->next = NULL;
+	else 
+	    (*store_inst)->head = NULL;
+	
+	*ret_val = last_node->val;
+    
+    free(last_node);
+	last_node = NULL; 
+	(*store_inst)->size--;
+    return 0;
+}
+
+
 int free_store(struct Store *store_inst) {
     if (store_inst == NULL) {
-        puts("Store is empty\n"); 
+        fprintf(stderr, "Store is empty\n"); 
 		return 1;
     }
     struct StoreNode *cur = store_inst->head;
@@ -160,6 +161,5 @@ void print_list(struct Store *store_inst) {
         cur = cur->next;
     }
 }
-
 
 //int main() {return 0;}
