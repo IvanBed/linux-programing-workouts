@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include "store_ll.h"
+#include "rand.h"
 
 static int exit_signal = 0;
 static pthread_mutex_t m;
@@ -25,7 +26,7 @@ static void* get_data(void *data) {
 		pthread_cond_signal(&cond);
         pthread_mutex_unlock(&m);
 		
-		sleep(2);
+		sleep(get_random_real(0.5, 2));
 	}
 }
 
@@ -42,7 +43,7 @@ static void* set_data(void *data) {
         pthread_cond_signal(&cond);
         pthread_mutex_unlock(&m);
 		
-		sleep(2);
+		sleep(get_random_real(0.5, 2));
    }
 }
 
