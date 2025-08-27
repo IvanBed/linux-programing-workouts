@@ -1,6 +1,8 @@
 #ifndef STORE_LL_H
 #define STORE_LL_H
 
+#include <stdlib.h> 
+
 struct StoreNode {
     
     struct StoreNode *next;
@@ -20,11 +22,11 @@ struct Store {
 
 int store_init(struct Store**, size_t);
 
-int add_val(struct StoreNode**, int);
+int add_val(struct Store**, int);
 
-int get_val(struct StoreNode**, int*);
+int get_val(struct Store**, int*);
 
-int free_store(struct StoreNode*); 
+int free_store(struct Store*); 
 
 
 #endif

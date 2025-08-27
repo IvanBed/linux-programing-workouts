@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <errno.h>
 
-// Вынести в заголовчной файл.
+// Вынести в заголовочный файл.
 /*
 struct StoreNode {
     struct StoreNode *next;
@@ -34,7 +34,7 @@ int store_init(struct Store **store, size_t capacity) {
 }
 
 
-int make_node(struct StoreNode** cur_node, int val) {
+static int make_node(struct StoreNode** cur_node, int val) {
 
     *cur_node = (struct StoreNode*) malloc(sizeof(struct StoreNode));
     if (*cur_node == NULL) {
@@ -149,6 +149,7 @@ int free_store(struct Store *store_inst) {
 		store_inst->size--;
     } 
     store_inst->head = NULL;
+	free(store_inst);
     return 0;
 }
 
