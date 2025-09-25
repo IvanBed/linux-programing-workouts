@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "store_ll.h"
-#include <cstdlib>
+#include <stdlib.h>
 #include <errno.h>
 
 // Вынести в заголовочный файл.
@@ -101,34 +101,6 @@ int get_val(struct Store **store_inst, int* ret_val) {
 	*ret_val = last_node->val;
     
     free(last_node);
-	(*store_inst)->size--;
-    return 0;
-}
-
-
-int get_val2(struct Store **store_inst, int* ret_val) {
-    if (store_inst == NULL || *store_inst == NULL) {
-        fprintf(stderr, "Store is NULL.\n");
-        return 1;
-    }
-    struct StoreNode *cur = (*store_inst)->head;
-	 
-    if (cur == NULL) {
-        fprintf(stderr, "Current node is NULL.\n");
-        return 1;
-    }
- 
-    while (cur->next != NULL) cur = cur->next;
-	struct StoreNode *last_node = cur;
-	if (last_node->prev != NULL)
-        last_node->prev->next = NULL;
-	else 
-	    (*store_inst)->head = NULL;
-	
-	*ret_val = last_node->val;
-    
-    free(last_node);
-	last_node = NULL; 
 	(*store_inst)->size--;
     return 0;
 }
