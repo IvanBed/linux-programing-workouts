@@ -238,7 +238,8 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < n/2; i++) {
         free(file_store[i]);
     }
-
-    mutex_destroy();
+	
+	pthread_cond_destroy(&cond);
+    pthread_mutex_destroy(&m);
     return 0;
 }
