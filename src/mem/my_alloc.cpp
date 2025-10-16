@@ -31,7 +31,7 @@ int main() {
     void* next = blc + 1;
     void* prev = blc + 2;
     blc = blc + 3;
-    *next = (blc + 32);
+    //*next = (blc + 32);
 
 
     *(std::size_t*)size_ptr = size_info;
