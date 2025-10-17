@@ -1,8 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
 
-using namespace std;
-
 // Эта функция будет вызвана перед тем как вызывать myalloc и myfree
     // используйте ее чтобы инициализировать ваш аллокатор перед началом
     // работы.
@@ -11,6 +9,7 @@ using namespace std;
     //       должен распределять, все возвращаемые указатели должны быть
     //       либо равны NULL, либо быть из этого участка памяти
     // size - размер участка памяти, на который указывает buf
+
 static void* head;
 static void *max_ptr_val;
 static std::size_t list_size;
