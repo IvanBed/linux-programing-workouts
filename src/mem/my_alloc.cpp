@@ -18,6 +18,7 @@ static std::size_t list_size;
 static void set_size(void *, std::size_t);
 static void set_next(void *, void *);
 static void set_prev(void *, void *);
+static void set_is_free_flag(void *, int);
 
 void mysetup(void* buf, std::size_t size)
 {
@@ -78,6 +79,43 @@ static void * get_prev(void * cur_node)
 static void * get_data(void * cur_node)
 {
     return cur_node + 3;
+}
+
+static void set_is_free_flag(void * cur_block, int flag)
+{
+    void *flag_ptr = cur_block + 3;
+    *flag_ptr = flag;
+}
+
+
+static int get_is_free_flag(void * cur_block)
+{
+    return *(cur_block + 3);
+}
+
+
+static void * get_data(void * cur_block)
+{
+    return cur_block + 4;
+}
+
+
+static void* find_block(std::size size)
+{
+	void *cur_block = head;
+	do 
+	{
+		std::size_t cur_block_size = get_size(cur_block);
+		std::size_t cur_block_status = get_is_free_flag(cur_block);
+		std::cout << "Размер блока: " << cur_block_size << std::endl;
+		std::cout << "Статус блока: " <<  cur_block_status << std::endl;
+		if (cur_block_size > size && cur_block_status)
+		{
+			//выделяем этот блок
+		}
+		
+	} while(get_next(cur_block));
+		
 }
 
 
