@@ -1,7 +1,12 @@
 #include <iostream>
 #include <stdlib.h>
 #define BORDER_MARKES_CNT 2
+/*
+    TO DO
 
+
+
+*/
 
 using namespace std;
 
@@ -27,10 +32,6 @@ void mysetup(void* buf, std::size_t size)
     list_size = size;
     set_size((size_t*)buf, size);*/
 }
-
-// Функция аллокации
-void* myalloc(std::size_t size)
-{}
 
 // Функция освобождения
 void myfree(void* p)
@@ -109,24 +110,50 @@ static size_t make_offset_to_next(size_t * block)
 }
 
 
-static void find_block(std::size_t size)
+
+static size_t *  find_block(std::size_t size)
 {
   size_t *cur_block = head;
   do 
   {
     std::size_t cur_block_size = get_size(cur_block);
-    std::size_t cur_block_status = get_is_free_flag(cur_block);  
-    if (cur_block_size > size && cur_block_status)
+    std::size_t cur_block_status = get_left_border_marker(cur_block); 
+    std::size_t cur_block_status_r = get_right_border_marker(cur_block, cur_block_size); 
+    char **cur_block_data = (char**)get_data(cur_block);
+    if (cur_block_size > size)
     {  
-        
-        std::cout << "Размер блока: " << cur_block_size << std::endl;
+        return cur_block;
+        /*std::cout << "Размер блока: " << cur_block_size << std::endl;
         std::cout << "Статус блока: " <<  cur_block_status << std::endl;
+        std::cout << "Статус блока: " <<  cur_block_status_r << std::endl;
+        std::cout << "Информация блока: " <<  *cur_block_data << std::endl;*/
     }
     
     cur_block = get_next_block_ptr(cur_block);
   } while(cur_block);
-    
+    return NULL;
 }
+
+
+static void  print_list()
+{
+  size_t *cur_block = head;
+  do 
+  {
+    std::size_t cur_block_size = get_size(cur_block);
+    std::size_t cur_block_status = get_left_border_marker(cur_block); 
+    std::size_t cur_block_status_r = get_right_border_marker(cur_block, cur_block_size); 
+    char **cur_block_data = (char**)get_data(cur_block);
+  
+    std::cout << "Размер блока: " << cur_block_size << std::endl;
+    std::cout << "Статус блока: " <<  cur_block_status << std::endl;
+    std::cout << "Статус блока: " <<  cur_block_status_r << std::endl;
+    std::cout << "Информация блока: " <<  *cur_block_data << std::endl;
+    
+    cur_block = get_next_block_ptr(cur_block);
+  } while(cur_block);
+}
+
 
 
 static size_t * make_block(size_t *block, size_t size, size_t status)
@@ -137,6 +164,37 @@ static size_t * make_block(size_t *block, size_t size, size_t status)
     set_prev_block_ptr(block, nullptr);
     set_is_free_flag(block, status);
     return block;
+}
+
+void* myalloc(std::size_t size)
+{
+    size_t *block = find_block(size);
+    char **block_data = (char**)get_data(block);
+    //std::cout << *block_data << std::endl;
+    size_t *new_block = NULL;
+    //std::cout << block << std::endl;
+    
+    size_t offset = (get_size(block) - size);
+    //std::cout << "offset " << offset << std::endl;
+    new_block = block + offset/sizeof(size_t*);
+    
+   // std::cout << new_block << std::endl;
+    
+    set_size(new_block, size);
+    set_next_block_ptr(new_block, get_next_block_ptr(block));
+    set_prev_block_ptr(new_block, block); 
+    set_right_border_marker(new_block, get_size(new_block), 0);
+    
+    set_size(block, get_size(block) - (size + 40));
+    set_next_block_ptr(block, new_block);
+    
+    set_left_border_marker(new_block, 0);
+    
+    set_right_border_marker(block, get_size(block), 1);
+    
+    char **test_char = (char**)get_data(new_block);
+    *test_char = "9";
+    return *test_char;
 }
 
 //Пока тестирую связный список, что реализован внутри непрерывного участка логической памяти
