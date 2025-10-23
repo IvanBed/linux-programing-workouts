@@ -1,21 +1,13 @@
-/* 
-Welcome to JDoodle!
-
-You can execute code here in 88 languages. Right now you’re in the C++ IDE.
-
-  1. Click the orange Execute button ▶ to execute the sample code below and see how it works.
-
-  2. Want help writing or debugging code? Type a query into JDroid on the right hand side ---------------->
-
-  3. Try the menu buttons on the left. Save your file, share code with friends and open saved projects.
-
-Want to change languages? Try the search bar up the top. 
-*/
-
 #include <iostream>
 #define FREE 1
 #define ALLOCATED 0
 #define METAINFO_SIZE 40
+
+/*
+TO DO
+    заменить size_t * на char *
+
+*/
 
 using namespace std;
 
@@ -158,7 +150,18 @@ void* myalloc(std::size_t size)
 
 // Функция освобождения
 void myfree(void* p)
-{}
+{
+    size_t *prev = get_prev_block_ptr(p);
+    if(!prev)
+    {
+        
+    }
+    size_t *next = get_prev_block_ptr(p);
+    if(prev)
+    {
+        
+    }
+}
 
 static void  print_list()
 {
@@ -181,10 +184,10 @@ int main() {
     size_t alloc_size = 2048;
     void *blc = malloc(alloc_size);
     mysetup(blc, alloc_size);
-    myalloc(64);
-    myalloc(128);
-    myalloc(256); 
-    myalloc(1024);
-    myalloc(2048);
+    void *p1 = myalloc(64);
+    void *p2 = myalloc(128);
+    void *p3 = myalloc(256); 
+    void *p4 = myalloc(1024);
+    void *p5 = myalloc(2048);
     print_list();
 }
