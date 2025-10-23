@@ -1,5 +1,18 @@
-#include <iostream>
+/* 
+Welcome to JDoodle!
 
+You can execute code here in 88 languages. Right now you’re in the C++ IDE.
+
+  1. Click the orange Execute button ▶ to execute the sample code below and see how it works.
+
+  2. Want help writing or debugging code? Type a query into JDroid on the right hand side ---------------->
+
+  3. Try the menu buttons on the left. Save your file, share code with friends and open saved projects.
+
+Want to change languages? Try the search bar up the top. 
+*/
+
+#include <iostream>
 #define FREE 1
 #define ALLOCATED 0
 #define METAINFO_SIZE 40
@@ -131,13 +144,12 @@ void* myalloc(std::size_t size)
     size_t old_block_new_size = (get_size(block) - real_size);
     set_size(block, old_block_new_size);
     set_right_border_marker(block, old_block_new_size, FREE);
-    
-    
-    size_t offset = (old_block_new_size + sizeof(size_t*))/sizeof(size_t*);
+     
+    size_t offset = old_block_new_size/sizeof(size_t*) + 1;
     
     size_t *new_block = block + offset;  
     
-    make_block(new_block, size, ALLOCATED);
+    new_block = make_block(new_block, size, ALLOCATED);
       
     add_next(block, new_block);
     
@@ -171,6 +183,8 @@ int main() {
     mysetup(blc, alloc_size);
     myalloc(64);
     myalloc(128);
-    myalloc(256);     
+    myalloc(256); 
+    myalloc(1024);
+    myalloc(2048);
     print_list();
 }
