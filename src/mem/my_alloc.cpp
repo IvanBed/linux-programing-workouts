@@ -7,9 +7,16 @@
 #define ALLOCATED 0
 #define METAINFO_SIZE 40
 
+#define HEADER_SIZE 4 // count of blocks that store the block's metainfo
+
+#define SIZE_OFFSET 4
+#define NEXT_OFFSET 3
+#define PREV_OFFSET 2
+#define L_BORDER_MARKER_OFFSET 1
+
 /*
 TO DO
-    заменить size_t * на char *
+    change size_t * to char *
 
 */
 
@@ -19,55 +26,55 @@ static size_t* head;
 
 static size_t* block_init_metainfo(size_t * cur_block)
 {
-    return cur_block + 4;
+    return cur_block + HEADER_SIZE;
 }
 
 static void set_size(size_t * cur_block, std::size_t size)
 {
-    size_t *size_ptr = cur_block - 4;
+    size_t *size_ptr = cur_block - SIZE_OFFSET;
     *size_ptr = size;
 }
 
 static std::size_t get_size(size_t * cur_block)
 {
-    size_t *size_ptr = cur_block - 4;
+    size_t *size_ptr = cur_block - SIZE_OFFSET;
     return *size_ptr;
 }
 
 static void set_next_block_ptr(size_t * cur_block, size_t *next_block)
 {
-    size_t **next = (size_t **)(cur_block - 3);
+    size_t **next = (size_t **)(cur_block - NEXT_OFFSET);
     *next = next_block;
 }
 
 static size_t * get_next_block_ptr(size_t * cur_block)
 {
-    size_t **next = (size_t **)(cur_block - 3); 
+    size_t **next = (size_t **)(cur_block - NEXT_OFFSET); 
     return *next;
 }
 
 static void set_prev_block_ptr(size_t * cur_block, size_t * prev_block)
 {
-    size_t **prev = (size_t **)(cur_block - 2);
+    size_t **prev = (size_t **)(cur_block - PREV_OFFSET);
     *prev = prev_block;
 }
 
 static size_t * get_prev_block_ptr(size_t * cur_block)
 {
-    size_t **prev = (size_t **)(cur_block - 2);
+    size_t **prev = (size_t **)(cur_block - PREV_OFFSET);
     return *prev;
 }
 
 static void set_left_border_marker(size_t * cur_block, size_t flag)
 {
-    size_t *flag_ptr = cur_block - 1;
+    size_t *flag_ptr = cur_block - L_BORDER_MARKER_OFFSET;
     *flag_ptr = flag;
 }
 
 
 static size_t get_left_border_marker(size_t * cur_block)
 {
-    return *(cur_block - 1);
+    return *(cur_block - L_BORDER_MARKER_OFFSET);
 }
 
 static void set_right_border_marker(size_t * cur_block, size_t size, size_t flag)
@@ -94,7 +101,7 @@ static size_t * make_block(size_t *block, size_t size, size_t status)
     return block;
 }
 
-static size_t *  find_block(std::size_t size)
+static size_t * find_block(std::size_t size)
 {
   size_t *cur_block = head;
   do 
@@ -152,7 +159,6 @@ void* myalloc(std::size_t size)
     return new_block;
 }
 
-// Функция освобождения
 void myfree(void* p)
 {
     size_t *prev = get_prev_block_ptr((size_t *)p);
@@ -176,9 +182,9 @@ static void  print_list()
     std::size_t cur_block_status = get_left_border_marker(cur_block); 
     std::size_t cur_block_status_r = get_right_border_marker(cur_block); 
   
-    std::cout << "Размер блока: " << cur_block_size << std::endl;
-    std::cout << "Статус блока: " <<  cur_block_status << std::endl;
-    std::cout << "Статус блока: " <<  cur_block_status_r << std::endl;
+    std::cout << "Block size: " << cur_block_size << std::endl;
+    std::cout << "Block status from left marker: " <<  cur_block_status << std::endl;
+    std::cout << "Block status from right marker: " <<  cur_block_status_r << std::endl;
     
     cur_block = get_next_block_ptr(cur_block);
   } while(cur_block);
@@ -191,7 +197,7 @@ int main() {
     void *blc = mmap(0, alloc_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	//void *blc = malloc(alloc_size);
 	
-	mysetup(blc, alloc_size);
+    mysetup(blc, alloc_size);
     void *p1 = myalloc(64);
     void *p2 = myalloc(128);
     void *p3 = myalloc(256); 
