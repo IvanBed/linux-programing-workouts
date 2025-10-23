@@ -7,7 +7,7 @@
 #define ALLOCATED 0
 #define METAINFO_SIZE 40
 
-#define HEADER_SIZE 4 // count of blocks that store the block's metainfo
+#define HEADER_SIZE 4 // count of cells that store the block's metainfo
 
 #define SIZE_OFFSET 4
 #define NEXT_OFFSET 3
