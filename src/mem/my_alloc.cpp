@@ -1,4 +1,8 @@
 #include <iostream>
+
+#include <unistd.h>
+#include <sys/mman.h>
+
 #define FREE 1
 #define ALLOCATED 0
 #define METAINFO_SIZE 40
@@ -151,12 +155,12 @@ void* myalloc(std::size_t size)
 // Функция освобождения
 void myfree(void* p)
 {
-    size_t *prev = get_prev_block_ptr(p);
+    size_t *prev = get_prev_block_ptr((size_t *)p);
     if(!prev)
     {
         
     }
-    size_t *next = get_prev_block_ptr(p);
+    size_t *next = get_next_block_ptr((size_t *)p);
     if(prev)
     {
         
@@ -181,13 +185,20 @@ static void  print_list()
 }
 
 int main() {
+    
     size_t alloc_size = 2048;
-    void *blc = malloc(alloc_size);
-    mysetup(blc, alloc_size);
+    
+    void *blc = mmap(0, alloc_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	//void *blc = malloc(alloc_size);
+	
+	mysetup(blc, alloc_size);
     void *p1 = myalloc(64);
     void *p2 = myalloc(128);
     void *p3 = myalloc(256); 
     void *p4 = myalloc(1024);
     void *p5 = myalloc(2048);
     print_list();
+
+    munmap(blc, alloc_size);
+	
 }
