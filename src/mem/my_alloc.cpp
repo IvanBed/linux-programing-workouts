@@ -17,7 +17,7 @@
 /*
 TO DO
     change size_t * to char *
-
+	add WINAPI mem allocation and make cond compile
 */
 
 using namespace std;
@@ -148,7 +148,7 @@ void* myalloc(std::size_t size)
     set_size(block, old_block_new_size);
     set_right_border_marker(block, old_block_new_size, FREE);
      
-    size_t offset = old_block_new_size/sizeof(size_t*) + 1;
+    size_t offset = old_block_new_size/sizeof(size_t*) + 1; 
     
     size_t *new_block = block + offset;  
     
@@ -181,13 +181,14 @@ static void  print_list()
     std::size_t cur_block_size = get_size(cur_block);
     std::size_t cur_block_status = get_left_border_marker(cur_block); 
     std::size_t cur_block_status_r = get_right_border_marker(cur_block); 
-  
+    std::cout << "---------------------------------------------------------------\n";
     std::cout << "Block size: " << cur_block_size << std::endl;
     std::cout << "Block status from left marker: " <<  cur_block_status << std::endl;
     std::cout << "Block status from right marker: " <<  cur_block_status_r << std::endl;
     
     cur_block = get_next_block_ptr(cur_block);
   } while(cur_block);
+    std::cout << "---------------------------------------------------------------\n";
 }
 
 int main() {
@@ -196,15 +197,26 @@ int main() {
     
     void *blc = mmap(0, alloc_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	//void *blc = malloc(alloc_size);
-	
+    if (!blc)
+    {
+        std::cout << "Could not get memory chunk from OS!!!\n";
+        exit(1);
+    }
     mysetup(blc, alloc_size);
     void *p1 = myalloc(64);
     void *p2 = myalloc(128);
     void *p3 = myalloc(256); 
-    void *p4 = myalloc(1024);
+    char *p4 = (char *) myalloc(1024);
     void *p5 = myalloc(2048);
     print_list();
+	
+	std::string test_str("test string!");
+	p4 = "test string!";
+	std::cout << p4 << std::endl; 
+
+	if(!p5)
+		std::cout << "p5 is null!\n";
 
     munmap(blc, alloc_size);
-	
+	exit(0);
 }
