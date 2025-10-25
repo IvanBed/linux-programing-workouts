@@ -35,7 +35,7 @@ static void set_size(size_t * cur_block, std::size_t size)
     *size_ptr = size;
 }
 
-static std::size_t get_size(size_t * cur_block)
+static size_t get_size(size_t * cur_block)
 {
     size_t *size_ptr = cur_block - SIZE_OFFSET;
     return *size_ptr;
@@ -92,8 +92,8 @@ static size_t * make_block(size_t *block, size_t size, size_t status)
 {
     block = block_init_metainfo(block);
     set_size(block, size);
-    set_next_block_ptr(block, nullptr);
-    set_prev_block_ptr(block, nullptr);
+    set_next_block_ptr(block, NULL);
+    set_prev_block_ptr(block, NULL);
     set_left_border_marker(block, status);
     set_right_border_marker(block, size, status);
     return block;
@@ -135,7 +135,12 @@ static void merge_blocks(size_t * l_block, size_t * r_block)
     set_right_border_marker(r_block, get_size(r_block), FREE);
     
     size_t * next_r_block = get_next_block_ptr(r_block);
+    if (next_r_block)
+        set_prev_block_ptr(next_r_block, l_block);
+    
+    set_left_border_marker(l_block, FREE);
     set_next_block_ptr(l_block, next_r_block);
+    
     set_size(l_block, get_size(l_block) + get_size(r_block) + METAINFO_SIZE);
     
 }
@@ -180,15 +185,17 @@ void myfree(void* p)
     size_t *cur_block = (size_t*) p;
     if (!prev && !next)
     {
-        std::cout << "!prev && !next" << std::endl;
+        //std::cout << "!prev && !next" << std::endl;
         free_block(cur_block);
     }
     else if (prev && !next)
     {
-        std::cout << "prev && !next" << std::endl;
+        //std::cout << "prev && !next" << std::endl;
         if(get_right_border_marker(prev) == FREE)
         {
+            //std::cout << "prev && !next merge" << std::endl;
             merge_blocks(prev, cur_block);
+           
         }
         else 
         {
@@ -197,7 +204,7 @@ void myfree(void* p)
     }
     else if (!prev && next)
     {
-        std::cout << "!prev && next" << std::endl;
+        //std::cout << "!prev && next" << std::endl;
         if(get_left_border_marker(next) == FREE)
         {
             merge_blocks(cur_block, next);
@@ -212,27 +219,27 @@ void myfree(void* p)
         //std::cout << "prev && next" << std::endl;
         if(get_left_border_marker(prev) == FREE && get_left_border_marker(next) == FREE)
         {
-            std::cout << "prev && next 1" << std::endl;
+            //std::cout << "prev && next 1" << std::endl;
             merge_blocks(cur_block, next);
             merge_blocks(prev, cur_block);
             
         }
         else if (get_left_border_marker(prev) == FREE && get_left_border_marker(next) != FREE)
         {
-            std::cout << "prev && next 2" << std::endl;
+           //std::cout << "prev && next 2" << std::endl;
             merge_blocks(prev, cur_block);
+            
         }
         else if (get_left_border_marker(prev) != FREE && get_left_border_marker(next) == FREE)
         {
-            std::cout << "prev && next 3" << std::endl;
+            //std::cout << "prev && next 3" << std::endl;
             merge_blocks(cur_block, next);
         }
         else
         {
-            std::cout << "prev && next 4" << std::endl;
+            //std::cout << "prev && next 4" << std::endl;
             free_block(cur_block);
-        }
-        
+        }       
     } 
 }
 
@@ -256,7 +263,7 @@ static void  print_list()
 
 int main() {
     
-    size_t alloc_size = 2048;
+    size_t alloc_size = 4096;
     
     void *blc = mmap(0, alloc_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	//void *blc = malloc(alloc_size);
@@ -270,15 +277,21 @@ int main() {
     void *p2 = myalloc(128);
     void *p3 = myalloc(256); 
     char *p4 = (char *) myalloc(1024);
-    //void *p5 = myalloc(2048);
-   
-	
-    myfree(p1);
+    void *p5 = myalloc(2048);
+    void *p6 = myalloc(64);
+    void *p7 = myalloc(64);
+    void *p8 = myalloc(32);
+    
     myfree(p3);
-    myfree(p2);
     myfree(p4);
+    myfree(p7);
+    myfree(p8);
+    myfree(p6);
+    myfree(p5);
+    myfree(p1);
+    myfree(p2);
+    
     print_list();
-
     munmap(blc, alloc_size);
 	exit(0);
 }
