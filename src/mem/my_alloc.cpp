@@ -71,7 +71,6 @@ static void set_left_border_marker(size_t * cur_block, size_t flag)
     *flag_ptr = flag;
 }
 
-
 static size_t get_left_border_marker(size_t * cur_block)
 {
     return *(cur_block - L_BORDER_MARKER_OFFSET);
@@ -82,7 +81,6 @@ static void set_right_border_marker(size_t * cur_block, size_t size, size_t flag
   size_t *flag_ptr = cur_block + size/sizeof(size_t);
   *flag_ptr = flag;
 }
-
 
 static size_t get_right_border_marker(size_t * cur_block)
 {
