@@ -132,6 +132,22 @@ static void add_next(size_t *l_block, size_t *r_block)
     
 }
 
+static void merge_blocks(size_t * l_block, size_t * r_block)
+{
+    set_right_border_marker(r_block, get_size(r_block), FREE);
+    
+    size_t * next_r_block = get_next_block_ptr(r_block);
+    set_next_block_ptr(l_block, next_r_block);
+    set_size(l_block, get_size(l_block) + get_size(r_block) + METAINFO_SIZE);
+    
+}
+
+static void free_block(size_t * block)
+{
+    set_left_border_marker(block, FREE);
+    set_right_border_marker(block, get_size(block), FREE);
+}
+
 void mysetup(void* buf, std::size_t size)
 {
     head = make_block((size_t*)buf, size - METAINFO_SIZE, FREE);
@@ -162,15 +178,64 @@ void* myalloc(std::size_t size)
 void myfree(void* p)
 {
     size_t *prev = get_prev_block_ptr((size_t *)p);
-    if(!prev)
-    {
-        
-    }
     size_t *next = get_next_block_ptr((size_t *)p);
-    if(prev)
+    size_t *cur_block = (size_t*) p;
+    if (!prev && !next)
     {
-        
+        std::cout << "!prev && !next" << std::endl;
+        free_block(cur_block);
     }
+    else if (prev && !next)
+    {
+        std::cout << "prev && !next" << std::endl;
+        if(get_right_border_marker(prev) == FREE)
+        {
+            merge_blocks(prev, cur_block);
+        }
+        else 
+        {
+            free_block(cur_block);
+        }
+    }
+    else if (!prev && next)
+    {
+        std::cout << "!prev && next" << std::endl;
+        if(get_left_border_marker(next) == FREE)
+        {
+            merge_blocks(cur_block, next);
+        }
+        else 
+        {
+            free_block(cur_block);
+        }
+    } 
+    else 
+    {
+        //std::cout << "prev && next" << std::endl;
+        if(get_left_border_marker(prev) == FREE && get_left_border_marker(next) == FREE)
+        {
+            std::cout << "prev && next 1" << std::endl;
+            merge_blocks(cur_block, next);
+            merge_blocks(prev, cur_block);
+            
+        }
+        else if (get_left_border_marker(prev) == FREE && get_left_border_marker(next) != FREE)
+        {
+            std::cout << "prev && next 2" << std::endl;
+            merge_blocks(prev, cur_block);
+        }
+        else if (get_left_border_marker(prev) != FREE && get_left_border_marker(next) == FREE)
+        {
+            std::cout << "prev && next 3" << std::endl;
+            merge_blocks(cur_block, next);
+        }
+        else
+        {
+            std::cout << "prev && next 4" << std::endl;
+            free_block(cur_block);
+        }
+        
+    } 
 }
 
 static void  print_list()
@@ -207,15 +272,14 @@ int main() {
     void *p2 = myalloc(128);
     void *p3 = myalloc(256); 
     char *p4 = (char *) myalloc(1024);
-    void *p5 = myalloc(2048);
-    print_list();
+    //void *p5 = myalloc(2048);
+   
 	
-	std::string test_str("test string!");
-	p4 = "test string!";
-	std::cout << p4 << std::endl; 
-
-	if(!p5)
-		std::cout << "p5 is null!\n";
+    myfree(p1);
+    myfree(p3);
+    myfree(p2);
+    myfree(p4);
+    print_list();
 
     munmap(blc, alloc_size);
 	exit(0);
