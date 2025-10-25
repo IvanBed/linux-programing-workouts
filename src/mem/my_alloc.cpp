@@ -180,6 +180,11 @@ void* myalloc(std::size_t size)
 
 void myfree(void* p)
 {
+	if(!p)
+        return;
+    if(get_right_border_marker((size_t *)p) == FREE || get_left_border_marker((size_t *)p) == FREE )
+        return;
+	
     size_t *prev = get_prev_block_ptr((size_t *)p);
     size_t *next = get_next_block_ptr((size_t *)p);
     size_t *cur_block = (size_t*) p;
