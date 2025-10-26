@@ -91,8 +91,8 @@ void myfree(void *p)
     } 
 }
 
-//Main fo testing
-int main() {
+//Main is temporary for initial testing 
+/*int main() {
     
     size_t alloc_size = 4096;
     
@@ -143,4 +143,4 @@ int main() {
     print_list();
     munmap(blc, alloc_size);
 	exit(0);
-}
+}*/
