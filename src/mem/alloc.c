@@ -2,15 +2,15 @@
 #include "alloc.h"
 #include "alloc_utils.h"
 
-static size_t* head;
+static size_t *head;
 
-void mysetup(void* buf, size_t size)
+void mysetup(void *buf, size_t size)
 {
     head = make_block((size_t*)buf, size - METAINFO_SIZE, FREE);
 
 }
 
-void* myalloc(size_t size)
+void * myalloc(size_t size)
 {
     size_t real_size = size + METAINFO_SIZE;
     size_t *block = find_block(real_size);
@@ -31,7 +31,7 @@ void* myalloc(size_t size)
     return new_block;
 }
 
-void myfree(void* p)
+void myfree(void *p)
 {
 	if(!p)
         return;
