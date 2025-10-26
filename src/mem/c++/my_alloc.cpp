@@ -1,3 +1,4 @@
+// Вариант c++ для сдачи задания
 #include <iostream>
 
 #include <unistd.h>
