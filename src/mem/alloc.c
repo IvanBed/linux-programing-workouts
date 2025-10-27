@@ -2,12 +2,13 @@
 #include "alloc.h"
 #include "alloc_utils.h"
 
+/*Create Makefiles with static and dynamic linking*/
+
 static size_t *head;
 
 void mysetup(void *buf, size_t size)
 {
     head = make_block((size_t*)buf, size - METAINFO_SIZE, FREE);
-
 }
 
 void * myalloc(size_t size)
@@ -35,7 +36,7 @@ void myfree(void *p)
 {
 	if(!p)
         return;
-    if(get_right_border_marker((size_t *)p) == FREE || get_left_border_marker((size_t *)p) == FREE )
+    if(get_right_border_marker((size_t *)p) == FREE || get_left_border_marker((size_t *)p) == FREE)
         return;
 	
     size_t *prev = get_prev_block_ptr((size_t *)p);
