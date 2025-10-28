@@ -38,7 +38,7 @@ size_t get_right_border_marker(size_t *);
 
 size_t * make_block(size_t *, size_t, size_t); 
 
-size_t * find_block(size_t);
+size_t * find_block(size_t *, size_t);
 
 void add_next(size_t *, size_t *);
 
@@ -47,7 +47,7 @@ void merge_blocks(size_t *, size_t *);
 
 void free_block(size_t *);
 
-void  print_list();
+void  print_list(size_t *);
 
 
 #endif

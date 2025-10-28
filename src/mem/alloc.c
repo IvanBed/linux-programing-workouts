@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <sys/mman.h>
 #include "alloc.h"
 #include "alloc_utils.h"
@@ -14,7 +15,7 @@ void mysetup(void *buf, size_t size)
 void * myalloc(size_t size)
 {
     size_t real_size = size + METAINFO_SIZE;
-    size_t *block = find_block(real_size);
+    size_t *block = find_block(head, real_size);
     if (!block)
         return NULL;
     size_t old_block_new_size = (get_size(block) - real_size);
@@ -93,7 +94,7 @@ void myfree(void *p)
 }
 
 //Main is temporary for initial testing 
-/*int main() {
+int main() {
     
     size_t alloc_size = 4096;
     
@@ -141,7 +142,7 @@ void myfree(void *p)
     myfree(p2);
         
     
-    print_list();
+    print_list(head);
     munmap(blc, alloc_size);
 	exit(0);
-}*/
+}

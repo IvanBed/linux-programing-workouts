@@ -4,13 +4,13 @@ SRCS = alloc.c alloc_utils.c
  
 all: $(TARGET)
 
-hello: alloc.o alloc_utils.o
+myalloc: alloc.o alloc_utils.o
 	g++ alloc.o alloc_utils.o -o $(TARGET)
 
-main.o: alloc.c
+alloc.o: alloc.c
 	g++ -c alloc.c
 
-factorial.o: alloc_utils.c
+alloc_utils.o: alloc_utils.c
 	g++ -c alloc_utils.c
 
 clean:

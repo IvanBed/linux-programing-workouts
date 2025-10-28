@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "alloc.h"
+#include "alloc_utils.h"
 
 size_t* block_init_metainfo(size_t * block)
 {
@@ -76,7 +77,7 @@ size_t * make_block(size_t *block, size_t size, size_t status)
     return block;
 }
 
-size_t * find_block(size_t size)
+size_t * find_block(size_t *head, size_t size)
 {
   size_t *block = head;
   do 
@@ -128,7 +129,7 @@ void free_block(size_t * block)
     set_right_border_marker(block, get_size(block), FREE);
 }
 
-void  print_list()
+void  print_list(size_t *head)
 {
   size_t *block = head;
   do 
