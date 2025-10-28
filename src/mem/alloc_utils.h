@@ -44,6 +44,7 @@ void add_next(size_t *, size_t *);
 
 void merge_chunks(size_t *, size_t *);
 
+void setzero(void *, size_t);
 
 void free_chunk(size_t *);
 
