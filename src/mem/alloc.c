@@ -16,20 +16,18 @@ void * myalloc(size_t size)
 {
     size_t real_size = size + METAINFO_SIZE;
     size_t *chunk = find_chunk(head, real_size);
-    if (!chunk)
+   
+	if (!chunk)
         return NULL;
-    size_t old_chunk_new_size = (get_size(chunk) - real_size);
-    set_size(chunk, old_chunk_new_size);
-    set_right_border_marker(chunk, old_chunk_new_size, FREE);
-     
+    
+	size_t old_chunk_new_size = (get_size(chunk) - real_size); 
+	set_size(chunk, old_chunk_new_size);
+    set_right_border_marker(chunk, old_chunk_new_size, FREE); 
     size_t offset = old_chunk_new_size/sizeof(size_t*) + 1; 
-    
+	
     size_t *new_chunk = chunk + offset;  
-    
-    new_chunk = make_chunk(new_chunk, size, ALLOCATED);
-      
+    new_chunk = make_chunk(new_chunk, size, ALLOCATED); 
     add_next(chunk, new_chunk);
-    
     return new_chunk;
 }
 
@@ -95,7 +93,6 @@ void myfree(void *p)
         else if (get_left_border_marker(prev) == FREE && get_left_border_marker(next) != FREE)
         {
             merge_chunks(prev, chunk);
-            
         }
         else if (get_left_border_marker(prev) != FREE && get_left_border_marker(next) == FREE)
         {
@@ -156,7 +153,6 @@ int main() {
     myfree(p1);
     myfree(p2);
         
-    
     print_list(head);
     munmap(blc, alloc_size);
 	exit(0);
