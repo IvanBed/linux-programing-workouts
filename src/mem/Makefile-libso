@@ -3,13 +3,13 @@ TARGET = myalloc_lib.so
 all: $(TARGET)
 
 myalloc_lib.so: alloc.o alloc_utils.o
-	g++ -shared alloc.o alloc_utils.o -o $(TARGET)
+	gcc -shared alloc.o alloc_utils.o -o $(TARGET)
 
 alloc.o: alloc.c
-	g++ -c -fPIC alloc.c -o alloc.o
+	gcc -c -fPIC alloc.c -o alloc.o
 
 alloc_utils.o: alloc_utils.c
-	g++ -c -fPIC alloc_utils.c -o alloc_utils.o
+	gcc -c -fPIC alloc_utils.c -o alloc_utils.o
 
 clean:
 	rm -rf *.o myalloc
