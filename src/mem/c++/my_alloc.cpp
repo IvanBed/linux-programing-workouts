@@ -3,7 +3,7 @@
 
 #include <unistd.h>
 #include <sys/mman.h>
-
+#include <cstring>
 #define FREE 1
 #define ALLOCATED 0
 #define METAINFO_SIZE 40
@@ -14,6 +14,14 @@
 #define NEXT_OFFSET 3
 #define PREV_OFFSET 2
 #define L_BORDER_MARKER_OFFSET 1
+
+#define ONE_BYTE_OFFSET   0b00001111111111111111111111111111;   
+#define TWO_BYTE_OFFSET   0b00000000111111111111111111111111;   
+#define THREE_BYTE_OFFSET 0b00000000000011111111111111111111;
+#define FOUR_BYTE_OFFSET  0b00000000000000001111111111111111;
+#define FIVE_BYTE_OFFSET   0b00000000000000000000111111111111;
+#define SIX_BYTE_OFFSET 0b00000000000000000000000011111111;
+#define SEVEN_BYTE_OFFSET 0b00000000000000000000000000001111;
 
 /*
 TO DO
@@ -267,6 +275,61 @@ static void  print_list()
     std::cout << "---------------------------------------------------------------\n";
 }
 
+size_t get_offset_mask(size_t bytes)
+{
+    switch(bytes)
+    {
+        case 1:
+            return ONE_BYTE_OFFSET;
+        case 2:
+            return TWO_BYTE_OFFSET;
+        case 3:
+            return THREE_BYTE_OFFSET;
+        case 4:
+            return FOUR_BYTE_OFFSET;
+        case 5:
+            return FIVE_BYTE_OFFSET;
+        case 6:
+            return SIX_BYTE_OFFSET;
+        default:
+            return SEVEN_BYTE_OFFSET;
+    }
+}
+
+void setzero(void *ptr, size_t bytes_cnt)
+{
+    size_t *chunk_ptr = (size_t *)ptr;  
+    
+    size_t intpart_size = (bytes_cnt/sizeof(size_t))*sizeof(size_t);
+    size_t otherpart_size = bytes_cnt - intpart_size; // always lesser than sizeof(type) in our case 8 bytes
+    
+    size_t *end_chunk_ptr = chunk_ptr + intpart_size/sizeof(size_t);
+  
+	size_t *cur_ptr = chunk_ptr;
+	while(cur_ptr != end_chunk_ptr)
+	{
+	    *cur_ptr = 0;
+	     cur_ptr = cur_ptr + 1;
+	}
+	
+    if (otherpart_size != 0)
+    {
+        size_t offset_mask = get_offset_mask(otherpart_size);
+        *cur_ptr &= offset_mask;
+    }
+}
+
+void * mycalloc(size_t numitems, size_t size)
+{
+	size_t bytes_cnt = numitems*size;
+	void * raw_chunk = myalloc(bytes_cnt);
+	if (raw_chunk == NULL)
+	    return NULL;
+	setzero(raw_chunk, bytes_cnt); 
+	
+	return raw_chunk;
+}
+
 int main() {
     
     size_t alloc_size = 4096;
@@ -279,8 +342,10 @@ int main() {
         exit(1);
     }
     mysetup(blc, alloc_size);
-    void *p1 = myalloc(64);
-    void *p2 = myalloc(128);
+    
+    void *p1 = mycalloc(10, 7);
+ 
+    /*void *p2 = myalloc(128);
     void *p3 = myalloc(256); 
     char *p4 = (char *) myalloc(1024);
     void *p5 = myalloc(2048);
@@ -296,8 +361,8 @@ int main() {
     myfree(p5);
     myfree(p1);
     myfree(p2);
-    
-    print_list();
+    */
+    //print_list();
     munmap(blc, alloc_size);
 	exit(0);
 }
