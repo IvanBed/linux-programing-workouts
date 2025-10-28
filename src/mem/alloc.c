@@ -35,10 +35,11 @@ void * myalloc(size_t size)
 
 void * mycalloc(size_t numitems, size_t size)
 {
-	void * raw_chunk = myalloc(numitems*size);
-	size_t offset = numitems*size;
-	*((size_t *)raw_chunk) <<= offset;
-
+	size_t bytes_cnt = numitems*size;
+	void * raw_chunk = myalloc(bytes_cnt);
+	if (raw_chunk == NULL)
+	    return NULL;
+	setzero(raw_chunk, bytes_cnt); 
 	return raw_chunk;
 }
 
