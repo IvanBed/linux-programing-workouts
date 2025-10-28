@@ -1,6 +1,4 @@
 TARGET = myalloc
-CFLAGS = -std=c11 -MP -MMD
-SRCS = alloc.c alloc_utils.c
  
 all: $(TARGET)
 

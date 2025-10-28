@@ -3,7 +3,7 @@
 #include "alloc.h"
 #include "alloc_utils.h"
 
-/*Create Makefiles with static and dynamic linking*/
+/*Create Makefiles with static and dynamic linking, app and so version*/
 
 static size_t *head;
 
