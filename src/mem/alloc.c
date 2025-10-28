@@ -9,28 +9,42 @@ static size_t *head;
 
 void mysetup(void *buf, size_t size)
 {
-    head = make_block((size_t*)buf, size - METAINFO_SIZE, FREE);
+    head = make_chunk((size_t*)buf, size - METAINFO_SIZE, FREE);
 }
 
 void * myalloc(size_t size)
 {
     size_t real_size = size + METAINFO_SIZE;
-    size_t *block = find_block(head, real_size);
-    if (!block)
+    size_t *chunk = find_chunk(head, real_size);
+    if (!chunk)
         return NULL;
-    size_t old_block_new_size = (get_size(block) - real_size);
-    set_size(block, old_block_new_size);
-    set_right_border_marker(block, old_block_new_size, FREE);
+    size_t old_chunk_new_size = (get_size(chunk) - real_size);
+    set_size(chunk, old_chunk_new_size);
+    set_right_border_marker(chunk, old_chunk_new_size, FREE);
      
-    size_t offset = old_block_new_size/sizeof(size_t*) + 1; 
+    size_t offset = old_chunk_new_size/sizeof(size_t*) + 1; 
     
-    size_t *new_block = block + offset;  
+    size_t *new_chunk = chunk + offset;  
     
-    new_block = make_block(new_block, size, ALLOCATED);
+    new_chunk = make_chunk(new_chunk, size, ALLOCATED);
       
-    add_next(block, new_block);
+    add_next(chunk, new_chunk);
     
-    return new_block;
+    return new_chunk;
+}
+
+void * mycalloc(size_t numitems, size_t size)
+{
+	void * raw_chunk = myalloc(numitems*size);
+	size_t offset = numitems*size;
+	*((size_t *)raw_chunk) <<= offset;
+
+	return raw_chunk;
+}
+
+void * myrealloc(void *bl, size_t ns)
+{
+	
 }
 
 void myfree(void *p)
@@ -40,55 +54,55 @@ void myfree(void *p)
     if(get_right_border_marker((size_t *)p) == FREE || get_left_border_marker((size_t *)p) == FREE)
         return;
 	
-    size_t *prev = get_prev_block_ptr((size_t *)p);
-    size_t *next = get_next_block_ptr((size_t *)p);
-    size_t *block = (size_t*) p;
+    size_t *prev = get_prev_chunk_ptr((size_t *)p);
+    size_t *next = get_next_chunk_ptr((size_t *)p);
+    size_t *chunk = (size_t*) p;
     if (!prev && !next)
     {
-        free_block(block);
+        free_chunk(chunk);
     }
     else if (prev && !next)
     {
         if(get_right_border_marker(prev) == FREE)
         {
-            merge_blocks(prev, block);
+            merge_chunks(prev, chunk);
         }
         else 
         {
-            free_block(block);
+            free_chunk(chunk);
         }
     }
     else if (!prev && next)
     {
         if(get_left_border_marker(next) == FREE)
         {
-            merge_blocks(block, next);
+            merge_chunks(chunk, next);
         }
         else 
         {
-            free_block(block);
+            free_chunk(chunk);
         }
     } 
     else 
     {
         if(get_left_border_marker(prev) == FREE && get_left_border_marker(next) == FREE)
         {
-            merge_blocks(block, next);
-            merge_blocks(prev, block);
+            merge_chunks(chunk, next);
+            merge_chunks(prev, chunk);
             
         }
         else if (get_left_border_marker(prev) == FREE && get_left_border_marker(next) != FREE)
         {
-            merge_blocks(prev, block);
+            merge_chunks(prev, chunk);
             
         }
         else if (get_left_border_marker(prev) != FREE && get_left_border_marker(next) == FREE)
         {
-            merge_blocks(block, next);
+            merge_chunks(chunk, next);
         }
         else
         {
-            free_block(block);
+            free_chunk(chunk);
         }       
     } 
 }

@@ -2,147 +2,147 @@
 #include "alloc.h"
 #include "alloc_utils.h"
 
-size_t* block_init_metainfo(size_t * block)
+size_t* chunk_init_metainfo(size_t * chunk)
 {
-    return block + HEADER_SIZE;
+    return chunk + HEADER_SIZE;
 }
 
-void set_size(size_t * block, size_t size)
+void set_size(size_t * chunk, size_t size)
 {
-    size_t *size_ptr = block - SIZE_OFFSET;
+    size_t *size_ptr = chunk - SIZE_OFFSET;
     *size_ptr = size;
 }
 
-size_t get_size(size_t * block)
+size_t get_size(size_t * chunk)
 {
-    size_t *size_ptr = block - SIZE_OFFSET;
+    size_t *size_ptr = chunk - SIZE_OFFSET;
     return *size_ptr;
 }
 
-void set_next_block_ptr(size_t * block, size_t *next_block)
+void set_next_chunk_ptr(size_t * chunk, size_t *next_chunk)
 {
-    size_t **next = (size_t **)(block - NEXT_OFFSET);
-    *next = next_block;
+    size_t **next = (size_t **)(chunk - NEXT_OFFSET);
+    *next = next_chunk;
 }
 
-size_t * get_next_block_ptr(size_t * block)
+size_t * get_next_chunk_ptr(size_t * chunk)
 {
-    size_t **next = (size_t **)(block - NEXT_OFFSET); 
+    size_t **next = (size_t **)(chunk - NEXT_OFFSET); 
     return *next;
 }
 
-void set_prev_block_ptr(size_t * block, size_t * prev_block)
+void set_prev_chunk_ptr(size_t * chunk, size_t * prev_chunk)
 {
-    size_t **prev = (size_t **)(block - PREV_OFFSET);
-    *prev = prev_block;
+    size_t **prev = (size_t **)(chunk - PREV_OFFSET);
+    *prev = prev_chunk;
 }
 
-size_t * get_prev_block_ptr(size_t * block)
+size_t * get_prev_chunk_ptr(size_t * chunk)
 {
-    size_t **prev = (size_t **)(block - PREV_OFFSET);
+    size_t **prev = (size_t **)(chunk - PREV_OFFSET);
     return *prev;
 }
 
-void set_left_border_marker(size_t * block, size_t flag)
+void set_left_border_marker(size_t * chunk, size_t flag)
 {
-    size_t *flag_ptr = block - L_BORDER_MARKER_OFFSET;
+    size_t *flag_ptr = chunk - L_BORDER_MARKER_OFFSET;
     *flag_ptr = flag;
 }
 
-size_t get_left_border_marker(size_t * block)
+size_t get_left_border_marker(size_t * chunk)
 {
-    return *(block - L_BORDER_MARKER_OFFSET);
+    return *(chunk - L_BORDER_MARKER_OFFSET);
 }
 
-void set_right_border_marker(size_t * block, size_t size, size_t flag)
+void set_right_border_marker(size_t * chunk, size_t size, size_t flag)
 {
-  size_t *flag_ptr = block + size/sizeof(size_t *);
+  size_t *flag_ptr = chunk + size/sizeof(size_t *);
   *flag_ptr = flag;
 }
 
-size_t get_right_border_marker(size_t * block)
+size_t get_right_border_marker(size_t * chunk)
 {
  
-  return *(block + get_size(block)/sizeof(size_t *));
+  return *(chunk + get_size(chunk)/sizeof(size_t *));
 }
 
-size_t * make_block(size_t *block, size_t size, size_t status)
+size_t * make_chunk(size_t *chunk, size_t size, size_t status)
 {
-    block = block_init_metainfo(block);
-    set_size(block, size);
-    set_next_block_ptr(block, NULL);
-    set_prev_block_ptr(block, NULL);
-    set_left_border_marker(block, status);
-    set_right_border_marker(block, size, status);
-    return block;
+    chunk = chunk_init_metainfo(chunk);
+    set_size(chunk, size);
+    set_next_chunk_ptr(chunk, NULL);
+    set_prev_chunk_ptr(chunk, NULL);
+    set_left_border_marker(chunk, status);
+    set_right_border_marker(chunk, size, status);
+    return chunk;
 }
 
-size_t * find_block(size_t *head, size_t size)
+size_t * find_chunk(size_t *head, size_t size)
 {
-  size_t *block = head;
+  size_t *chunk = head;
   do 
   {
-    size_t block_size = get_size(block);
-    size_t block_status = get_left_border_marker(block); 
-    size_t block_status_r = get_right_border_marker(block);  
-    if (block_size > size)
+    size_t chunk_size = get_size(chunk);
+    size_t chunk_status = get_left_border_marker(chunk); 
+    size_t chunk_status_r = get_right_border_marker(chunk);  
+    if (chunk_size > size)
     {  
-        return block;
+        return chunk;
     }
     
-    block = get_next_block_ptr(block);
-  } while(block);
+    chunk = get_next_chunk_ptr(chunk);
+  } while(chunk);
     return NULL;
 }
 
-void add_next(size_t *l_block, size_t *r_block)
+void add_next(size_t *l_chunk, size_t *r_chunk)
 {
-    size_t *cur_next_l_block = get_next_block_ptr(l_block);
-    if (cur_next_l_block != NULL)
-        set_prev_block_ptr(cur_next_l_block, r_block);
+    size_t *cur_next_l_chunk = get_next_chunk_ptr(l_chunk);
+    if (cur_next_l_chunk != NULL)
+        set_prev_chunk_ptr(cur_next_l_chunk, r_chunk);
     
-    set_next_block_ptr(r_block, cur_next_l_block);
-    set_prev_block_ptr(r_block, l_block); 
+    set_next_chunk_ptr(r_chunk, cur_next_l_chunk);
+    set_prev_chunk_ptr(r_chunk, l_chunk); 
     
-    set_next_block_ptr(l_block, r_block);
+    set_next_chunk_ptr(l_chunk, r_chunk);
     
 }
 
-void merge_blocks(size_t * l_block, size_t * r_block)
+void merge_chunks(size_t * l_chunk, size_t * r_chunk)
 {
-    set_right_border_marker(r_block, get_size(r_block), FREE);
+    set_right_border_marker(r_chunk, get_size(r_chunk), FREE);
     
-    size_t * next_r_block = get_next_block_ptr(r_block);
-    if (next_r_block)
-        set_prev_block_ptr(next_r_block, l_block);
+    size_t * next_r_chunk = get_next_chunk_ptr(r_chunk);
+    if (next_r_chunk)
+        set_prev_chunk_ptr(next_r_chunk, l_chunk);
     
-    set_left_border_marker(l_block, FREE);
-    set_next_block_ptr(l_block, next_r_block);
+    set_left_border_marker(l_chunk, FREE);
+    set_next_chunk_ptr(l_chunk, next_r_chunk);
     
-    set_size(l_block, get_size(l_block) + get_size(r_block) + METAINFO_SIZE);
+    set_size(l_chunk, get_size(l_chunk) + get_size(r_chunk) + METAINFO_SIZE);
     
 }
 
-void free_block(size_t * block)
+void free_chunk(size_t * chunk)
 {
-    set_left_border_marker(block, FREE);
-    set_right_border_marker(block, get_size(block), FREE);
+    set_left_border_marker(chunk, FREE);
+    set_right_border_marker(chunk, get_size(chunk), FREE);
 }
 
 void  print_list(size_t *head)
 {
-  size_t *block = head;
+  size_t *chunk = head;
   do 
   {
-    size_t block_size = get_size(block);
-    size_t block_status = get_left_border_marker(block); 
-    size_t block_status_r = get_right_border_marker(block); 
+    size_t chunk_size = get_size(chunk);
+    size_t chunk_status = get_left_border_marker(chunk); 
+    size_t chunk_status_r = get_right_border_marker(chunk); 
     printf("---------------------------------------------------------------\n");
-    printf("Block size: %d\n", block_size);
-    printf("Block status from left marker: %d\n", block_status); 
-    printf("Block status from right marker: %d\n", block_status_r);  
+    printf("chunk size: %d\n", chunk_size);
+    printf("chunk status from left marker: %d\n", chunk_status); 
+    printf("chunk status from right marker: %d\n", chunk_status_r);  
     
-    block = get_next_block_ptr(block);
-  } while(block);
+    chunk = get_next_chunk_ptr(chunk);
+  } while(chunk);
     printf("---------------------------------------------------------------\n");
 }
