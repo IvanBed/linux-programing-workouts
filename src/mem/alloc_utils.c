@@ -123,6 +123,51 @@ void merge_chunks(size_t * l_chunk, size_t * r_chunk)
     
 }
 
+size_t get_offset_mask(size_t bytes)
+{
+    switch(bytes)
+    {
+        case 1:
+            return ONE_BYTE_OFFSET;
+        case 2:
+            return TWO_BYTE_OFFSET;
+        case 3:
+            return THREE_BYTE_OFFSET;
+        case 4:
+            return FOUR_BYTE_OFFSET;
+        case 5:
+            return FIVE_BYTE_OFFSET;
+        case 6:
+            return SIX_BYTE_OFFSET;
+        default:
+            return SEVEN_BYTE_OFFSET;
+    }
+}
+
+void setzero(void *ptr, size_t bytes_cnt)
+{
+    size_t *chunk_ptr = (size_t *)ptr;  
+    
+    size_t intpart_size = (bytes_cnt/sizeof(size_t))*sizeof(size_t);
+    size_t otherpart_size = bytes_cnt - intpart_size; // always lesser than sizeof(type) in our case 8 bytes
+    
+    size_t *end_chunk_ptr = chunk_ptr + intpart_size/sizeof(size_t);
+  
+	size_t *cur_ptr = chunk_ptr;
+	while(cur_ptr != end_chunk_ptr)
+	{
+	    *cur_ptr = 0;
+	     cur_ptr = cur_ptr + 1;
+	}
+	
+    if (otherpart_size != 0)
+    {
+        size_t offset_mask = get_offset_mask(otherpart_size);
+        *cur_ptr &= offset_mask;
+    }
+   
+}
+
 void free_chunk(size_t * chunk)
 {
     set_left_border_marker(chunk, FREE);
