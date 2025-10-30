@@ -47,16 +47,13 @@ public:
     
     ~SharedPtr()
     {
+        cnt_decrement(obj_counter_);
         if ((*obj_counter_) == 0) {
             delete ptr_;
             delete obj_counter_;  
         }
-        else 
-        {
-            cnt_decrement(obj_counter_);
-        }
     }
-    
+
     Expression * get() const 
     {
         return ptr_;
@@ -69,13 +66,10 @@ public:
     
     void reset(Expression *ptr = 0) 
     {
+        cnt_decrement(obj_counter_);
         if ((*obj_counter_) == 0) {
             delete ptr_;
             delete obj_counter_;  
-        }
-        else 
-        {
-            cnt_decrement(obj_counter_);
         }
         ptr_ = ptr;
         obj_counter_ = new size_t;
@@ -96,23 +90,18 @@ public:
     {   
         if (this != &ptr)
         {
-            if (*(obj_counter_) > 0)
-                cnt_decrement(obj_counter_);
-            else
-            {
+            cnt_decrement(obj_counter_);
+            if ((*obj_counter_) == 0) {
                 delete ptr_;
-            }    
+                delete obj_counter_;  
+            }   
             
-            if (ptr.get() != nullptr)
-            {
-                ptr_ = ptr.get();
-                obj_counter_ = ptr.get_current_obj_count();
-                cnt_increment(obj_counter_);
-            }
+            ptr_ = ptr.get();
+            obj_counter_ = ptr.get_current_obj_count();
+            cnt_increment(obj_counter_);
         }
         return *this;
     }
-    
 };
 
 void test(SharedPtr *ptr)
