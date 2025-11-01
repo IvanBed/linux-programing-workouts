@@ -12,7 +12,6 @@ public:
         size_ = size;
         
         data = (T*)new char[sizeof(T) * size];
-        //A* placementMemory = static_cast<A*>(operator new[] (n * sizeof(A)));
         for (size_t i = 0; i < size; i++)
            new (data + i) T(value);     
     }
@@ -29,7 +28,7 @@ public:
         size_ = arr.size();
         
         for(size_t i = 0; i < size_; i++)
-            new (data + i) T(arr[i]);  
+            new (new_data + i) T(arr[i]);  
         
         data = new_data;
     }
@@ -40,7 +39,7 @@ public:
          {
               data[i].~T();
          }
-         delete [] data; 
+         operator delete [] (data);
     }
     
     size_t size() const
@@ -54,17 +53,16 @@ public:
         if(&arr != this)
         {
             T *new_data = (T*)new char[sizeof(T) * arr.size()];
-            size_ = arr.size();
-            
-            for(size_t i = 0; i < size_; i++)
+            for(size_t i = 0; i < arr.size(); i++)
                 new (new_data + i) T(arr[i]);
             
             for (size_t i = 0; i < size_; i++)
             {
                  data[i].~T();
             }
-            delete [] data; 
+            operator delete [] (data); 
             data = new_data;
+            size_ = arr.size();
         }
         return *this;
     }
