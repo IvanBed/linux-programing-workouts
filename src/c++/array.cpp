@@ -1,21 +1,18 @@
 #include <cstddef>
-
 template <typename T>
 class Array
 {
-private:
+public:
     T * data;
     size_t size_;
-public: 
+ 
     explicit Array(size_t size, const T& value = T()) 
     {
         size_ = size;
         
         data = (T*)new char[sizeof(T) * size];
         for (size_t i = 0; i < size; i++)
-        {
-           data[i] = value; 
-        }      
+           new (data + i) T(value);     
     }
 
     Array()
@@ -30,17 +27,18 @@ public:
         size_ = arr.size();
         
         for(size_t i = 0; i < size_; i++)
-            new_data[i] = arr[i];  
+            new (data + i) T(arr[i]);  
         
         data = new_data;
     }
     
     ~Array()
     {
-        //for(size_t i = 0; i < size_; i++)
-        //{
-            delete data;  
-        //}
+         for (size_t i = 0; i < size_; i++)
+         {
+              data[i].~T();
+         }
+         delete [] (char*) data; 
     }
     
     size_t size() const
@@ -55,9 +53,15 @@ public:
         {
             T *new_data = (T*)new char[sizeof(T) * arr.size()];
             size_ = arr.size();
+            
             for(size_t i = 0; i < size_; i++)
-                new_data[i] = arr[i];
-            delete data;
+                new (data + i) T(arr[i]);
+            
+            for (size_t i = 0; i < size_; i++)
+            {
+                 data[i].~T();
+            }
+            delete [] (char*) data; 
             data = new_data;
         }
         return *this;
