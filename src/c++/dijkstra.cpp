@@ -13,30 +13,51 @@
 std::vector<int> split_line(std::string const & line, char del)
 {
     std::vector<int> res;
-    
-    std::string val = "";
-    
-    for (int i = 0; i < line.size(); i++)
-    {
-        if(line[i] != del)
+	try
+	{
+        std::string val = "";
+        for (int i = 0; i < line.size(); i++)
         {
-            val += line[i];
+            if(line[i] != del)
+            {
+                val += line[i];
+            }
+            else 
+            {
+                res.push_back(std::stoi(val));
+                val = "";
+			}
         }
-        else 
-        {
-            res.push_back(std::stoi(val));
-            val = "";
-        }
-    }        
+    }  
+    catch (const std::invalid_argument & e) 
+	{
+        std::cout << e.what() << "\n";
+    }
+    catch (const std::out_of_range & e) 
+	{
+        std::cout << e.what() << "\n";
+    }
+	
     res.push_back(std::stoi(val));
     return res;
 }
 
 void parse_pair(std::string const & line, int & f, int & s)
 {
-    int empty_pos = line.find(" ");
-    f = stoi(line.substr(0, empty_pos));
-    s = stoi(line.substr(empty_pos + 1, line.size() - (empty_pos + 1)));
+    try
+	{
+	    int empty_pos = line.find(" ");
+        f = stoi(line.substr(0, empty_pos));
+        s = stoi(line.substr(empty_pos + 1, line.size() - (empty_pos + 1)));		
+	}
+	catch (const std::invalid_argument & e) 
+	{
+        std::cout << e.what() << "\n";
+    }
+    catch (const std::out_of_range & e) 
+	{
+        std::cout << e.what() << "\n";
+    }
 }
 
 std::vector<std::vector<int>> read_input_data(int & verts_cnt, int & edges_cnt, int & start_vert, int & target_vert)
