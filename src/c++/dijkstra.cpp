@@ -54,11 +54,11 @@ void parse_pair(std::string const & line, int & f, int & s)
         f = stoi(line.substr(0, empty_pos));
         s = stoi(line.substr(empty_pos + 1, line.size() - (empty_pos + 1)));		
 	}
-	catch (const std::invalid_argument & e) 
+	catch (std::invalid_argument const & e) 
 	{
         std::cout << e.what() << "\n";
     }
-    catch (const std::out_of_range & e) 
+    catch (std::out_of_range const & e) 
 	{
         std::cout << e.what() << "\n";
     }
