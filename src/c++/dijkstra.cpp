@@ -6,10 +6,11 @@
 #define VERTEX(cnt) (cnt + 1) 
 
 /*
-    TO DO
-    1. Проверить алгоритм и оптимизировать
-    2. Расставить в нужных местах нужные целочисленные типы
-
+    Наивная реализация алгоритма Дейкстры 
+	Находит кратчайшие пути от одной из вершин графа до заданой другой вершины. 
+	TO DO
+    1. Оптимизация
+    
 */
 
 std::vector<int> split_line(std::string const & line, char separator)
@@ -30,6 +31,7 @@ std::vector<int> split_line(std::string const & line, char separator)
                 val = "";
 			}
         }
+        res.push_back(std::stoi(val));
     }  
     catch (std::invalid_argument const & e) 
 	{
@@ -40,7 +42,7 @@ std::vector<int> split_line(std::string const & line, char separator)
         std::cout << e.what() << "\n";
     }
 	
-    res.push_back(std::stoi(val));
+    
     return res;
 }
 
@@ -123,7 +125,6 @@ int dijkstra(std::vector<std::vector<int>> const & graph, int start_vert, int ta
     while(inter_cnt < (verts_cnt * verts_cnt) && visited[target_vert] == 0)
     {
         inter_cnt++;
-         
         int min_dist = INT_MAX;
         int new_vertex = 1;
         int cur_vert;
@@ -139,11 +140,9 @@ int dijkstra(std::vector<std::vector<int>> const & graph, int start_vert, int ta
                 {
                     min_dist = cur_dist;
                     new_vertex = i;
-                }
-                
+                }  
             }
         }
-        std::cout << " Vertex " << new_vertex << " has been visited! dist " << min_dist <<  "\n";
         active_verts.push_back(new_vertex);
         dist[new_vertex] = min_dist;
         visited[new_vertex] = 1;
@@ -154,7 +153,6 @@ int dijkstra(std::vector<std::vector<int>> const & graph, int start_vert, int ta
 
 int main() 
 {
-    
     int verts_cnt = 0;
     int edges_cnt = 0;
     
