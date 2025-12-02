@@ -3,6 +3,8 @@
 #include <climits>
 #include <cstring>
 
+#define VERTEX(cnt) (cnt + 1) 
+
 /*
     TO DO
     1. Проверить алгоритм и оптимизировать
@@ -10,15 +12,15 @@
 
 */
 
-std::vector<int> split_line(std::string const & line, char del)
+std::vector<int> split_line(std::string const & line, char separator)
 {
     std::vector<int> res;
 	try
 	{
         std::string val = "";
-        for (int i = 0; i < line.size(); i++)
+        for (size_t i = 0; i < line.size(); i++)
         {
-            if(line[i] != del)
+            if(line[i] != separator)
             {
                 val += line[i];
             }
@@ -29,11 +31,11 @@ std::vector<int> split_line(std::string const & line, char del)
 			}
         }
     }  
-    catch (const std::invalid_argument & e) 
+    catch (std::invalid_argument const & e) 
 	{
         std::cout << e.what() << "\n";
     }
-    catch (const std::out_of_range & e) 
+    catch (std::out_of_range const & e) 
 	{
         std::cout << e.what() << "\n";
     }
@@ -46,7 +48,7 @@ void parse_pair(std::string const & line, int & f, int & s)
 {
     try
 	{
-	    int empty_pos = line.find(" ");
+	    size_t empty_pos = line.find(" ");
         f = stoi(line.substr(0, empty_pos));
         s = stoi(line.substr(empty_pos + 1, line.size() - (empty_pos + 1)));		
 	}
@@ -88,9 +90,9 @@ std::vector<std::vector<int>> read_input_data(int & verts_cnt, int & edges_cnt, 
 
 int print_graph(std::vector<std::vector<int>> const & graph)
 {
-    for (int i = 1; i < graph.size(); i++)
+    for (size_t i = 1; i < graph.size(); i++)
     {
-        for (int j = 1; j < graph[i].size(); j++)
+        for (size_t j = 1; j < graph[i].size(); j++)
             std::cout << graph[i][j] << " ";
         std::cout << "\n"; 
     }
@@ -116,19 +118,19 @@ int dijkstra(std::vector<std::vector<int>> const & graph, int start_vert, int ta
     visited[start_vert] = 1;
     active_verts.push_back(start_vert);
     
-    int cnt = 0;
+    int inter_cnt = 0;
      
-    while(cnt < (verts_cnt * verts_cnt) && visited[target_vert] == 0)
+    while(inter_cnt < (verts_cnt * verts_cnt) && visited[target_vert] == 0)
     {
-        cnt++;
+        inter_cnt++;
          
         int min_dist = INT_MAX;
         int new_vertex = 1;
         int cur_vert;
-        for (int j = 0; j < active_verts.size(); j++)
+        for (size_t j = 0; j < active_verts.size(); j++)
         {
             cur_vert = active_verts[j];
-            for (int i = 1; i < graph[cur_vert].size(); i++)
+            for (size_t i = 1; i < graph[cur_vert].size(); i++)
             {
                 if (graph[cur_vert][i] == 0)
                     continue;
