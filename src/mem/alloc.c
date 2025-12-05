@@ -43,7 +43,14 @@ void * mycalloc(size_t numitems, size_t size)
 
 void * myrealloc(void *bl, size_t ns)
 {
-	
+	/*
+	Steps:
+    1. Check if the next chunk can accomodate the new data;
+	2.1. if true, just update metadata;
+	2.2. if false: 
+	2.2.1 if no place in general return -1, no data available;
+	2.2.2 if there is a suitable somewhere, rebuild structure of chunks to put this suitable chuck next to the target chunck
+	*/
 }
 
 void myfree(void *p)
