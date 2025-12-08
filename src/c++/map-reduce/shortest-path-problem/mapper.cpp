@@ -33,11 +33,9 @@ size_t get_vertex_id(std::string const & line)
     try {
         size_t tab_pos = line.find('\t');
         res = (size_t)std::stoi(line.substr(0, tab_pos));
-    }
-    catch (std::invalid_argument const & e) {
+    } catch (std::invalid_argument const & e) {
         std::cout << e.what() << "\n";
-    }
-    catch (std::out_of_range const & e) {
+    } catch (std::out_of_range const & e) {
         std::cout << e.what() << "\n";
     }
     return res;
@@ -54,11 +52,9 @@ int64_t get_distance_id(std::string const & line)
             res = -1;
         else 
             res = (int64_t)std::stoi(dist);
-    }
-    catch (std::invalid_argument const & e) {
+    } catch (std::invalid_argument const & e) {
         std::cout << e.what() << "\n";
-    }
-    catch (std::out_of_range const & e) {
+    } catch (std::out_of_range const & e) {
         std::cout << e.what() << "\n";
     }
     return res;
@@ -72,11 +68,9 @@ std::vector<std::string> const get_adj_list(std::string const & line)
         size_t end = line.find('}');
         std::string list_line = line.substr(start, end - start);
         res = split_line(list_line, ',');
-    }
-    catch (std::invalid_argument const & e) {
+    } catch (std::invalid_argument const & e) {
         std::cout << e.what() << "\n";
-    }
-    catch (std::out_of_range const & e) {
+    } catch (std::out_of_range const & e) {
         std::cout << e.what() << "\n";
     }
     return res;
