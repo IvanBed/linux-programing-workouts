@@ -4,8 +4,8 @@
     #include <vector>
     #include <iostream>
     #include <climits>
-	#include <map>
-	
+    #include <map>
+    
     struct vertex_info
     {
         size_t vertex_id;
@@ -13,9 +13,9 @@
         std::vector<std::string> adj_vertex;
     };
     
-    void parse_line(std::string const &, struct vertex_info &)
+    void parse_line(std::string const &, struct vertex_info &);
     
-	void print_data(size_t, int64_t dist, std::vector<std::string> const &);
+    void print_data(size_t, int64_t, std::vector<std::string> const &);
 
     void merge_vects(std::vector<std::string> &, std::vector<std::string> const &);
 

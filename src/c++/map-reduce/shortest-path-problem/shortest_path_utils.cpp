@@ -88,7 +88,7 @@ static void print_dist(int64_t dist)
         std::cout << dist <<"\t";
 }
 
-static print_adj_vertex(std::vector<std::string> const & vect)
+static void print_adj_vertex(std::vector<std::string> const & vect)
 {
     if (vect.empty()) {
         std::cout << "{}\n";
@@ -101,7 +101,7 @@ static print_adj_vertex(std::vector<std::string> const & vect)
             std::cout << vect[i] << ",";
         else 
             std::cout << vect[i] << "}\n";
-    }      
+    }
 }
 
 void print_data(size_t vertex_id, int64_t dist, std::vector<std::string> const & vect)
@@ -109,7 +109,7 @@ void print_data(size_t vertex_id, int64_t dist, std::vector<std::string> const &
     print_vertex_id(vertex_id);
     print_dist(dist);
     print_adj_vertex(vect);
-    
+
 }
 
 void merge_vects(std::vector<std::string> & dest, std::vector<std::string> const & source)
