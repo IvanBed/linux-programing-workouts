@@ -1,22 +1,25 @@
 CC = g++  # C++ compiler
-CFLAGS = -Wall -Wextra -O2 -g # C++ flags
+CFLAGS = -Wall -Wextra -O2 -c # C++ flags
 RM = rm -f   # rm command
 TARGET = shortest_path_mapper # target
 
-SRCS = mapper.cpp shortest_path_utils.cpp # source files
-OBJS = $(SRCS:.cpp=.o)
+SRC1 = mapper.cpp
+OBJ1 = $(SRC1:.cpp=.o)
+SRC2 = shortest_path_utils.cpp
+OBJ2 = $(SRC2:.cpp=.o)
 
 .PHONY: all
 all: ${TARGET}
 
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJ2) $(OBJ1)
         $(CC) -o $@ $^
 
-$(SRCS:.c=.d):%.d:%.c
-        $(CC) $(CFLAGS) -MM $< >$@
+$(OBJS1): $(SRC1)
+        $(CXX) $(CFLAGS) -o
 
-include $(SRCS:.cpp=.d)
+$(OBJS2): $(SRC2)
+        $(CXX) $(CFLAGS) -o
 
 .PHONY: clean
 clean:
-        -${RM} ${TARGET} ${OBJS} $(SRCS:.cpp=.d)
+        -${RM} $(OBJ1) $(OBJ2)
