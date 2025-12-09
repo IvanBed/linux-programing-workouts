@@ -8,7 +8,7 @@ void mapper()
         std::cout << line << "\n";
         parse_line(line, cur_info);
         if (!cur_info.adj_vertex.empty())
-            print_vector(cur_info.adj_vertex, cur_info.dist);
+            print_adj_vertex_info(cur_info.adj_vertex, cur_info.dist);
         line = "";
     }
 }
