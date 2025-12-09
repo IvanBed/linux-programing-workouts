@@ -4,8 +4,7 @@ static std::vector<std::string> split_line(std::string const & line, char separa
 {
     std::vector<std::string> res;
     std::string val = "";
-    for (size_t i = 0; i < line.size(); i++)
-    {
+    for (size_t i = 0; i < line.size(); i++) {
         if(line[i] != separator) {
             val += line[i];
         }
