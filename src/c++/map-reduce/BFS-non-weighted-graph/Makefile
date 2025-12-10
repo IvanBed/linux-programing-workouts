@@ -19,7 +19,7 @@ all: ${TARGET1}  ${TARGET2}
 $(TARGET1): $(OBJ3) $(OBJ1)
 	$(CC) -o $@ $^
 
-$(TARGET2): $(OBJ3) $(OBJ1)
+$(TARGET2): $(OBJ3) $(OBJ2)
 	$(CC) -o $@ $^
 
 $(OBJS1): $(SRC1)
