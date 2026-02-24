@@ -167,6 +167,11 @@ static int parseURL(struct Node **list, char *URLstr)
     return 0;
 }
 
+static uint8_t check_protocol(struct List *list)
+{
+    return true;
+}
+
 static int make_domain_name(struct Node* list, char ** domain_name)
 {
     struct Node* domain_name_node = get_node(list, 2);
@@ -220,18 +225,19 @@ static int make_http_request_msg(char const *domain_name, char const *resourсe_
     }
     
     char const *protocol_str  = " HTTP/1.1\r\n";
-    char const *conn_type_str = " Connection: close\r\n\r\n";
     char const *host_str      = "Host: ";
+    char const *conn_type_str = "\r\nConnection: close\r\n\r\n";
+
     char *method_str          = "";
     
     switch (type)
     {
     case GET:
-        method_str = "GET ";
+        method_str = "GET /";
         break;
         
     case POST:
-        method_str = "POST ";
+        method_str = "POST /";
         break;
 
     default:
@@ -381,7 +387,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Can not generate msg.\n");
         return 1;
     }
-
+    puts(msg);
     int len, bytes_sent;
 
     len = strlen(msg);
@@ -408,7 +414,8 @@ int main(int argc, char **argv) {
 
     if(resourсe_url)
         free(resourсe_url);
-
+    if(msg)
+        free(msg);
     close(sockfd);
     free_list(list);
 }
