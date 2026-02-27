@@ -2,14 +2,10 @@ import collector
 
 class NetworkDevice:
     
-    _hostname = '' 
-    _os_info = ''
-    _interfaces = ''
-
     def __init__(self):
         self.hostname   = collector.get_hostname()
         self.ip_address = collector.get_os_info()
-        self.interfaces = collector.get_ip_addresses
+        self.interfaces = collector.get_ip_addresses()
     
     def get_info(self):
         return { 'hostname':self.get_os, 'get_os_info':self.get_os_info, 'get_ip_addresses':self.get_ip_addresses }
