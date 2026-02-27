@@ -1,6 +1,6 @@
 TARGET = myalloc_lib.so
  
-all: $(TARGET)
+all: $(TARGET) 
 
 myalloc_lib.so: alloc.o alloc_utils.o
 	gcc -shared alloc.o alloc_utils.o -o $(TARGET)
