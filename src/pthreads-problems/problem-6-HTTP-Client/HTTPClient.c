@@ -9,11 +9,37 @@
 
 #define BUF_SIZE 512
 
+#define CNT_RETRIES 5
+#define MAX_APP_ARGS 3
+
+#define MAX_DIGITS 20
+#define NEW_LINE_CHARS_CNT 8
+#define NEW_LINE "\r\n\r\n"
+
+#define PROTOCOL_STR " HTTP/1.1\r\n"
+#define HOST_STR "Host: "
+#define GET_METHOD_STR "GET "
+#define CONN_TYPE_STR "\r\nConnection: close\r\n\r\n"
+
+#define POST_METHOD_STR "POST "
+#define CONTENT_TYPE_TEXT_STR "\r\nContent-Type: text/html; charset=utf-8\r\n"
+#define CONTETN_LEN_STR "Content-Length: "
+
+// ERRORS CODES
+#define NO_ERR 0
+#define EMPTY_STR_ERR 1
+#define ALLOC_ERR 2
+#define SOCK_ERR_WRITE 3
+#define SOCK_ERR_READ 4
+
+// ARGS ERRORS CODES
+#define NO_ARGS_ERR 5
+#define POST_ARGS_ERR 6
 #define true  1
 #define false 0
 
 
-enum request_type 
+enum request_method_type 
 { 
     GET, POST
 };
@@ -169,6 +195,7 @@ static int parseURL(struct Node **list, char *URLstr)
 
 static uint8_t check_protocol(struct List *list)
 {
+    puts(get_node(list, 1)->str_val);
     return true;
 }
 
@@ -214,68 +241,103 @@ static int make_resourсe_url(struct Node *list, char **resourсe_url_res, size_
 
     *resourсe_url_res = buff;
 
-    return 0;
+    return NO_ERR;
 }
 
-static int make_http_request_msg(char const *domain_name, char const *resourсe_url, enum request_type type, char **http_request_msg)
+uint8_t make_get_request(char const *domain_name, char const *resourсe_url, char **get_request)
 {
+    uint8_t err_code = 0;
     if (empty(domain_name) || empty(resourсe_url))
     {
-        return 1;
+        return EMPTY_STR_ERR;
     }
     
-    char const *protocol_str  = " HTTP/1.1\r\n";
-    char const *host_str      = "Host: ";
-    char const *conn_type_str = "\r\nConnection: close\r\n\r\n";
-
-    char *method_str          = "";
-    
-    switch (type)
-    {
-    case GET:
-        method_str = "GET /";
-        break;
-        
-    case POST:
-        method_str = "POST /";
-        break;
-
-    default:
-        break;
-    }
-
-    size_t domain_len        = strlen(domain_name);
-    size_t resourсe_url_len  = strlen(resourсe_url);
-    size_t protocol_len      = strlen(protocol_str);
-    size_t conn_type_len     = strlen(conn_type_str);
-    size_t host_str_len      = strlen(host_str);
-    size_t method_len        = strlen(method_str);
-    size_t offset            = 0;
-    size_t total_len         =  domain_len + resourсe_url_len + protocol_len + conn_type_len + host_str_len 
-    + method_len;
+    size_t total_len =  strlen(domain_name) + strlen(resourсe_url) + strlen(PROTOCOL_STR) + strlen(CONN_TYPE_STR) + strlen(HOST_STR) 
+    + strlen(POST_METHOD_STR);
 
     char *buff = (char*) malloc(total_len + 1);
     if (!buff)
     {
-        return 2;
+        return ALLOC_ERR;
     }
 
-    strcpy(buff + offset, method_str);
-    offset += method_len;
-    strcpy(buff + offset, resourсe_url);
-    offset += resourсe_url_len;
-    strcpy(buff + offset, protocol_str);
-    offset += protocol_len;
-    strcpy(buff + offset, host_str);
-    offset += host_str_len;
-    strcpy(buff + offset, domain_name);
-    offset += domain_len;   
-    strcpy(buff + offset, conn_type_str);
-    buff[total_len] = '\0';
-    
-    *http_request_msg = buff;
+    strcpy(buff, POST_METHOD_STR);
+ 
+    strcat(buff, resourсe_url);
+    strcat(buff, PROTOCOL_STR);
+    strcat(buff, HOST_STR);
 
-    return 0;
+    strcat(buff, domain_name); 
+    strcat(buff, CONN_TYPE_STR);
+    
+    *get_request = buff;
+
+    return NO_ERR;
+}
+
+uint8_t make_content_len_str(size_t body_len, char **content_len)
+{
+    char body_len_str[MAX_DIGITS + 1];
+    snprintf(body_len_str, MAX_DIGITS, "%ld", body_len);
+    
+    body_len_str[MAX_DIGITS] = '\0';
+    
+    size_t content_len_str_len    = strlen(CONTETN_LEN_STR) + NEW_LINE_CHARS_CNT + MAX_DIGITS + 1;
+    
+    char *buff = (char *)malloc(content_len_str_len + 1);
+    if (!buff)
+    {
+        return ALLOC_ERR;
+    }
+    
+    strcpy(buff, CONTETN_LEN_STR);
+    strcat(buff, body_len_str);
+    strcat(buff, NEW_LINE);
+    
+    *content_len = buff;
+    
+    return NO_ERR;
+}
+
+uint8_t make_post_request(char const *domain_name, char const *resourсe_url, char const *body, char **post_request)
+{
+    uint8_t err_code = 0;
+    if (empty(domain_name) || empty(resourсe_url))
+    {
+        return EMPTY_STR_ERR;
+    } 
+    
+    size_t body_len              = strlen(body);
+    char *content_len_str        = NULL;
+    if ((err_code = make_content_len_str(body_len, &content_len_str)) != 0)
+    {
+        return err_code;
+    }
+    
+    size_t total_len             =  strlen(domain_name) + strlen(resourсe_url) + strlen(PROTOCOL_STR) + strlen(HOST_STR) 
+    + strlen(POST_METHOD_STR) +  strlen(CONTENT_TYPE_TEXT_STR) + strlen(content_len_str) + body_len;
+    
+    char *buff = (char*) malloc(total_len + 1);
+    if (!buff)
+    {
+        return ALLOC_ERR;
+    }
+    
+    strcpy(buff, POST_METHOD_STR);
+    strcat(buff, resourсe_url);
+    strcat(buff, PROTOCOL_STR);
+    strcat(buff, HOST_STR);
+    strcat(buff, domain_name);
+    strcat(buff, CONTENT_TYPE_TEXT_STR);
+    strcat(buff, content_len_str);
+    strcat(buff, body);
+    
+    if (content_len_str)
+        free(content_len_str);
+    
+    *post_request = buff;
+
+    return NO_ERR;
 }
 
 static int get_ip_from_domain(char *domain_name, const char *port, struct addrinfo **result) 
@@ -297,7 +359,7 @@ static int get_ip_from_domain(char *domain_name, const char *port, struct addrin
     }
     
     //freeaddrinfo(&hints);
-    return 0;
+    return NO_ERR;
 }
 
 static int try_connect(struct addrinfo *addr_info, int *sockfd) 
@@ -324,22 +386,85 @@ static int try_connect(struct addrinfo *addr_info, int *sockfd)
         return 1;
     }
 
-    return 0;
+    return NO_ERR;
+}
+
+uint8_t send_request(int sockfd, char *const msg)
+{
+    size_t len     = strlen(msg);
+    size_t retries = 0;
+    int bytes_sent = 0;
+
+    while ((bytes_sent = send(sockfd, msg, len, 0)) != len) 
+    {
+        if (retries >= CNT_RETRIES)
+        {
+            return SOCK_ERR_WRITE;
+        }
+        retries++;
+    }
+    
+    printf ("bytes sent \n", bytes_sent);
+
+    return NO_ERR;
+}
+
+uint8_t get_response(int sockfd)
+{
+    size_t len = BUF_SIZE * 8;
+    char buff[len];
+    
+    size_t count;
+    while ((count = recv(sockfd, (void*) buff, len, 0)) != 0) 
+    {
+        puts(buff);
+        if (count == -1) {
+            switch (errno) 
+            {
+                case EAGAIN:
+                    usleep(2000);
+                    break;
+                default:
+                    perror("Failed to read from socket");
+                    return SOCK_ERR_READ;
+            }
+        }
+    }
+    return NO_ERR;
 }
 
 
 int main(int argc, char **argv) {
 
-    if (argc < 2) {
+    char *URL               = NULL;
+    char *body              = NULL;
+    enum request_method_type method_type;
+
+    if (argc < 3) 
+    {
         printf("");
-        return 0;
+        return NO_ARGS_ERR;
+    }
+    else
+    {
+        char *URL = argv[2];
+        if (argv[1] == "GET")
+            method_type = GET;
+        else 
+        {
+            method_type = POST;
+            if (argc < 4) 
+                return POST_ARGS_ERR;
+            else
+                body = argv[3];
+        }     
     }
     
-    char* URL = argv[1];
-    struct Node* list = NULL;
-    int sockfd = 0;
-    struct addrinfo* result;
-    
+    struct Node *list       = NULL;
+    int sockfd              = 0;
+    struct addrinfo *result = NULL;
+    char *msg               = NULL;
+
     int err = parseURL(&list, URL);
     if (err != 0) {
         fprintf(stderr, "Problem with parsing URL.\n");
@@ -376,46 +501,30 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Can not connect to the host.\n");
         return 1;
     }
-    
     freeaddrinfo(result);
     
-    char* msg = NULL;
-    
-    err = make_http_request_msg(domain_name, resourсe_url, GET, &msg);
-    
+    switch(method_type)
+    {
+        case GET:
+            err = make_get_request(domain_name, resourсe_url, &msg);
+            break;
+        case POST:
+            err = make_post_request(domain_name, resourсe_url, &msg);
+            break;  
+        default:
+            err = -1;
+    }
+ 
     if (err != 0) {
         fprintf(stderr, "Can not generate msg.\n");
         return 1;
-    }
-    puts(msg);
-    int len, bytes_sent;
-
-    len = strlen(msg);
-    bytes_sent = send(sockfd, msg, len, 0);
-    printf ("bytes sent \n", bytes_sent);
-    char buff[4096];
-    len = 4096;
-    size_t count;
-    
-    while ((count = recv(sockfd, (void*) buff, len, 0)) != 0) {
-        puts(buff);
-        if (count == -1) {
-            switch (errno) {
-                case EAGAIN:
-                usleep(20000);
-                break;
-            default:
-                perror("Failed to read from socket");
-                close(sockfd);
-                break;
-            }
-        }
     }
 
     if(resourсe_url)
         free(resourсe_url);
     if(msg)
         free(msg);
+
     close(sockfd);
     free_list(list);
 }
