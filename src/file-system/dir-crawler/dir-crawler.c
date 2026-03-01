@@ -94,7 +94,7 @@ uint8_t dfs_dir_tree(char const *dir_path, uid_t user_id)
         if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0) continue;
 
         next_file_path = make_absolute_path(dir_entry->d_name, dir_path);
-        if (stat(next_file_path, &file_stat) != 0) return GET_STAT_ERR; 
+        if (lstat(next_file_path, &file_stat) != 0) return GET_STAT_ERR; 
         printf("%s ",  dir_entry->d_name);
         if (S_ISDIR(file_stat.st_mode))
         {
@@ -146,7 +146,6 @@ uint8_t count_dir_entities_linux(char const *dir_path, files_stat *f_stat)
         if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0) continue;
         f_stat->count_file = f_stat->count_file + 1;
         next_file_path = make_absolute_path(dir_entry->d_name, dir_path);
-		printf("%s\n", next_file_path);
         if (dir_entry->d_type == DT_DIR)
         {
             err = count_dir_entities_linux(next_file_path, f_stat);
@@ -162,8 +161,6 @@ uint8_t count_dir_entities_linux(char const *dir_path, files_stat *f_stat)
     
     return NO_ERR;
 }
-
-
 
 int main(int argc, char** argv) 
 {
@@ -185,7 +182,7 @@ int main(int argc, char** argv)
     }
     
     exec_code = count_dir_entities_linux(argv[1], &f_sts);
-    printf("Results: Total file count: %ld\nTotal not permitted files: %ld\n", f_sts.count_file, f_sts.count_not_permitted);
+    printf("Results:\nTotal file count: %ld\nTotal not permitted files: %ld\n", f_sts.count_file, f_sts.count_not_permitted);
     printf("Code of execution: %d\n", exec_code);
    
     return exec_code;
