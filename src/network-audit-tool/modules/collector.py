@@ -8,7 +8,10 @@ def get_hostname() -> str:
 def get_os_info() -> str:
     return platform.system() + ' ' + platform.release()
 
-def get_ip_addresses():
+def get_network_interfaces():
+    pass
+
+def get_routing_table():
     pass
 
 def get_next_el(arr_list: list[str], word: str) -> tuple[bool, str]:
@@ -26,10 +29,10 @@ def del_empty(tokens: list[str]) -> list[str]:
             token = token.strip()
     return tokens
 
-def get_network_interfaces_info(ip_data: str) -> tuple[bool, list[dict[str, str]]]:
+def get_network_interfaces_info(ip_data: str) -> list[dict[str, str]]:
    
     if ip_data == '':
-        return True, None
+        return None
     
     network_interfaces = []
     rows_pattern = r'^[1-9]+:|\n[1-9]+:'
@@ -56,13 +59,13 @@ def get_network_interfaces_info(ip_data: str) -> tuple[bool, list[dict[str, str]
 
         network_interfaces.append(network_interface)
     
-    return False, network_interfaces
+    return network_interfaces
 
 
-def get_routing_table_info(routes_data: str) -> tuple[bool, list[dict[str, str]]]:
+def get_routing_table_info(routes_data: str) -> list[dict[str, str]]:
     
     if routes_data == '':
-        return True, None
+        return None
     
     routing_table_entities = []
     rows = del_empty(routes_data.splitlines())
@@ -104,4 +107,14 @@ def get_routing_table_info(routes_data: str) -> tuple[bool, list[dict[str, str]]
         routing_table_entities.append(routing_table_entity)    
         
     
-    return False, routing_table_entities
+    return routing_table_entities
+
+def get_system_info() -> dict[str, all]:
+    system_info = []
+
+    system_info['hostname'] = get_hostname()
+    system_info['os_info']  = get_os_info()
+    system_info['interfaces_info'] = get_network_interfaces()
+    system_info['routing_table_info'] = get_routing_table()
+
+    return system_info
