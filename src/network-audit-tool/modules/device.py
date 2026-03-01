@@ -2,10 +2,6 @@ import collector
 
 class NetworkDevice:
     
-    _hostname = '' 
-    _os_info = ''
-    _interfaces = ''
-
     def __init__(self):
         self.hostname   = collector.get_hostname()
         self.ip_address = collector.get_os_info()
