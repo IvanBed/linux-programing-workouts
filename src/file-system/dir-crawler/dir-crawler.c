@@ -72,57 +72,6 @@ char const *make_absolute_path(char const *current_dir_name, char const *prev_pa
 
 // Разобраться с функией stat, почему ошибка, какая ошибка? check errno
 
-uint8_t dfs_dir_tree(char const *dir_path, uid_t user_id)
-{
-    if (dir_path == NULL || dir_path == "")
-        return EMPTY_DIR_PATH;
-
-    DIR *dir = opendir(dir_path);
-    if (dir == NULL)
-    {
-        printf("Could not open directory: %s, please check syntex correctness\n", dir_path);
-        return DIR_OPD_ERR;
-    }
-
-    struct       dirent *dir_entry   = NULL; 
-    char const  *next_file_path      = NULL;
-    struct       stat file_stat;
-    uint8_t      err                 = NO_ERR;
-
-    while ((dir_entry = readdir(dir)) != NULL)
-    {
-        if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0) continue;
-
-        next_file_path = make_absolute_path(dir_entry->d_name, dir_path);
-        if (stat(next_file_path, &file_stat) != 0) return GET_STAT_ERR; 
-        printf("%s ",  dir_entry->d_name);
-        if (S_ISDIR(file_stat.st_mode))
-        {
-            if (file_stat.st_uid == user_id)
-            {
-                err = dfs_dir_tree(next_file_path, user_id);
-                if (err != 0) 
-                {
-                    perror("dfs_dir_tree: ");
-                    printf("\n");
-                    free(next_file_path);
-                    continue;
-                }
-            }   
-            else
-            {
-                printf("Permission denied!\n");
-            }
-                
-        }
-        free(next_file_path);
-    }
-
-    printf("\n");
-    closedir(dir);
-    
-    return NO_ERR;
-}
 
 uint8_t count_dir_entities_linux(char const *dir_path, files_stat *f_stat)
 {
