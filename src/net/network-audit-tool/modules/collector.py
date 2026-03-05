@@ -2,17 +2,43 @@ import re
 import platform 
 import subprocess
 
-def get_hostname() -> str:
+def get_hostname():
+    pass
+    
+def get_os_info() -> dir[str, str]:
+    try:
+        arch    = platform.architecture()
+        os_name = platform.system()
+        os_info = platform.release()
+    except (RuntimeError):
+        print('get_os_info err')
+        
+    return { 'arch': arch, 'os_name': os_name, 'os_info': os_info }
+    
+def get_linux_ips():
+    ips_info = subprocess.run('ip address',
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE,
+                           encoding='utf-8')
+    if ips_info.returncode == 0:
+        return True, get_network_interfaces_info(ips_info.stdout)
+    else:
+        return False, ips_info.stderr
+
+def get_windows_ips():
     pass
 
-def get_os_info() -> str:
-    return platform.system() + ' ' + platform.release()
-
-def get_network_interfaces():
-    pass
-
+def get_ip_addresses(os_name):
+    if os_name.lower() == 'linux':
+        return get_linux_ips()
+    elif os_name.lower() == 'windows':
+        return get_windows_ips()
+    else:
+        return None    
+      
 def get_routing_table():
     pass
+
 
 def get_next_el(arr_list: list[str], word: str) -> tuple[bool, str]:
     try:
