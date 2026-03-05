@@ -17,8 +17,16 @@
 #define DIR_OPEN_ERR 1
 #define GET_STAT_ERR 2
 #define FILES_STAT_INIT_ERR 3
-#define EMPTY_DIR_PATH_ERR 4
+#define EMPTY_STR_ERR 4
 #define READLINK_ERR 5
+
+// Mod flag info
+
+enum mod_flags
+{
+    VERBOSE = 1,
+    ALL_FILES = 2
+};
 
 uint8_t empty(char const *str)
 {
@@ -77,7 +85,7 @@ char const *get_file_name_slice(char const *absl_path)
 uint8_t print_dir_entities_info(char const *dir_path, uint8_t mod)
 {
     if (dir_path == NULL)
-        return EMPTY_DIR_PATH_ERR;
+        return EMPTY_STR_ERR;
 
     DIR *dir = opendir(dir_path);
     if (dir == NULL)
@@ -88,7 +96,9 @@ uint8_t print_dir_entities_info(char const *dir_path, uint8_t mod)
     
     struct       dirent *dir_entry   = NULL; 
     struct       stat file_stat;
-    
+    char         *next_file_path      = NULL;
+
+
     while ((dir_entry = readdir(dir)) != NULL)
     {
         if (!MOD_ALL(mod) && strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0) continue;
@@ -105,26 +115,24 @@ uint8_t print_dir_entities_info(char const *dir_path, uint8_t mod)
 
 uint8_t print_file_info(char const *file_path, uint8_t mod)
 {
-    switch(mod)
-    {
-        case MOD_VERBOSE(mod):
-            printf("%s\n", file_path);
-            break;
-        default:
-            printf("%s\n", get_file_name_slice(file_path));
-            break;
-    }
+    if (empty(file_path))
+        return EMPTY_STR_ERR;
+
+    if (MOD_VERBOSE(mod))
+        printf("%s\n", file_path);
+    else 
+        printf("%s\n", get_file_name_slice(file_path));
     
     return NO_ERR;
 }
 
 uint8_t print_s_link_info(char const *s_link_path, uint8_t mod)
 {
-    char    link_content_buffer[link_content_buffer_SIZE];
+    char    link_content_buffer[BUFFER_SIZE];
     ssize_t link_string_length;
     struct  stat file_stat;
     
-    if ((link_string_length = readlink(your_filename_for_stat, link_content_buffer, sizeof (link_content_buffer))) == -1)
+    if ((link_string_length = readlink(s_link_path, link_content_buffer, sizeof (link_content_buffer))) == -1)
     {
         perror("readlink");
         return NO_ERR;
@@ -136,12 +144,12 @@ uint8_t print_s_link_info(char const *s_link_path, uint8_t mod)
         if (MOD_VERBOSE(mod))
         {
             
-            if (lstat(file_path, &file_stat) != 0) return GET_STAT_ERR;
-            printf();
+            if (lstat(s_link_path, &file_stat) != 0) return GET_STAT_ERR;
+            printf("");
         }
         else
         {
-            printf("%s -> %s\n", your_filename_for_stat, link_content_buffer);
+            printf("%s -> %s\n", s_link_path, link_content_buffer);
         }
     
     }
@@ -149,10 +157,20 @@ uint8_t print_s_link_info(char const *s_link_path, uint8_t mod)
     return NO_ERR;
 }
 
+uint8_t parse_args(int argc, char **argv, char const **file_path, uint8_t *mod)
+{
+
+}
+
 int main(int argc, char ** argv)
 {
-    
-    
+    if (argc < 2)
+    {
+        return -1;
+    }
+
+    uint8_t mod           =  0;
+    char const *file_path = NULL;
     
     
     return NO_ERR;
