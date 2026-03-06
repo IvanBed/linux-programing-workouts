@@ -11,9 +11,11 @@
     #define REALLOC_ERR 2
     #define NULL_PTR_ERR 3
     
+	#define NO_EL -1
+	
     #define REALLOC_TRIES 10
     
-    #define INT64_TYPE 64
+    #define 64_TYPE 64
     
     #define true 1 
     #define false 0
