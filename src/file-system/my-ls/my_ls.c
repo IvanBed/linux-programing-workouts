@@ -255,10 +255,10 @@ int main(int argc, char ** argv)
 	switch(err)
 	{
 		case EMPTY_STR_ERR:
-			printf("my_ls: Невозможно получить текущую директорию\n");
+			printf("my_ls: Unable to get current directory\n");
 			return EMPTY_STR_ERR;
 		case NOT_FLAG_ARG:
-			printf("my_ls: Указанного флага не существует %s\n");
+			printf("my_ls: The specified flag or flags do not exist\n");
 			return NOT_FLAG_ARG;	
 		default:					
 	}	
