@@ -49,7 +49,7 @@ uint8_t vector_init(size_t capacity, size_t data_type_size, vector **res_vector)
     }
     
     char *data =  malloc(allocated_bytes);
-    if (!new_vector)
+    if (!data)
     {
         free(new_vector);
         return ALLOC_ERR;
