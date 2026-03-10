@@ -3,21 +3,21 @@
 uint8_t add_int(vector *inst, int el)
 {
     int num = el;
-    return add(inst, (char *)&num, 64_TYPE);
+    return add(inst, (char *)&num, TYPE_64);
 }
 
 uint8_t add_double(vector *inst, double el)
 {
     double num = el;
-    return add(inst, (char *)&num, 64_TYPE);
+    return add(inst, (char *)&num, TYPE_64);
 }
 
 int64_t get_int(vector *inst, size_t index)
 {    
-    char    num_buff[64_TYPE];
+    char    num_buff[TYPE_64];
     int64_t res;
     
-    uint8_t res = get_value(inst, index, 64_TYPE, num_buff);
+    uint8_t res = get_value(inst, index, TYPE_64, num_buff);
     if (res != NO_ERR)
     {
         return NO_EL;
@@ -29,10 +29,10 @@ int64_t get_int(vector *inst, size_t index)
 
 double get_double(vector *inst, size_t index)
 {    
-    char    num_buff[64_TYPE];
+    char    num_buff[TYPE_64];
     double  res;
     
-    uint8_t res = get_value(inst, index, 64_TYPE, num_buff);
+    uint8_t res = get_value(inst, index, TYPE_64, num_buff);
     if (res != NO_ERR)
     {
         return NO_EL;
@@ -46,7 +46,7 @@ double get_double(vector *inst, size_t index)
 int main() 
 {
     vector *test = NULL;
-    vector_init(1, 64_TYPE, &test);
+    vector_init(1, TYPE_64, &test);
     add_int(test, 12);
     add_int(test, 13);
     add_int(test, 14);

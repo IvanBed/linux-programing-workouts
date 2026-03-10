@@ -4,7 +4,8 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <stdint.h>
-    
+    #include <string.h>
+
     #define REALLOC_COEFFICIENT(x) ((1024.0/(x + 128.0) + 1.0))  
     //ERROR_CODE
     #define NO_ERR 0
@@ -16,8 +17,9 @@
     
     #define REALLOC_TRIES 10
     
-    #define 64_TYPE 64
-    
+    #define TYPE_64 64
+    #define TYPE_32 32
+
     #define true 1 
     #define false 0
     
@@ -33,7 +35,7 @@
         
     };
     
-    uint8_t vector_init(size_t, size_t, vector **)
+    uint8_t vector_init(size_t, size_t, vector **);
     uint8_t vector_destroy(vector *);
     
     uint8_t add(vector *, char *, size_t);

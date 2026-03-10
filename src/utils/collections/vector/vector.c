@@ -71,7 +71,7 @@ uint8_t vector_destroy(vector *inst)
     return NO_ERR;
 }
 
-uint8_t add(vector *inst, char *el, size_t data_type_size)
+uint8_t add(vector *inst, char *el, size_t el_type_size)
 {
     if (inst == NULL)
     {
@@ -84,21 +84,21 @@ uint8_t add(vector *inst, char *el, size_t data_type_size)
         while (resize(inst) != NO_ERR && tries++ < REALLOC_TRIES) {}
     }
   
-    char *insert_pos = *((inst->data) + (inst->size * data_type_size));
-    insert(insert_pos, value, type_size); 
+    char *insert_pos = ((inst->data) + (inst->size * el_type_size));
+    insert(insert_pos, el, el_type_size); 
     inst->size = inst->size + 1;
     return NO_ERR;
 }
 
-uint8_t get_value(vector *inst, size_t index, size_t data_type_size, char *value)
+uint8_t get_value(vector *inst, size_t index, size_t el_type_size, char *value)
 {
     if (inst == NULL && is_out_range(inst, index))
     {
         return NULL_PTR_ERR;
     }
     
-    char *val_pos = ((inst->data) + (index * data_type_size));
-    for (size_t i = 0; i < data_type_size; i++)
+    char *val_pos = ((inst->data) + (index * el_type_size));
+    for (size_t i = 0; i < el_type_size; i++)
     {
         value[i] = val_pos[i];
     }

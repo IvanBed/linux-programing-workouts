@@ -2,5 +2,4 @@
     #define STRING_INTERFACE_H
     #include "vector.h"
     
-    
 #endif
