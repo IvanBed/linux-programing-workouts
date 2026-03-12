@@ -6,12 +6,15 @@
     #include <stdint.h>
     #include <string.h>
 
+    #include <pthread.h>
+
     #define REALLOC_COEFFICIENT(x) ((1024.0/(x + 128.0) + 1.0))  
     //ERROR_CODE
     #define NO_ERR 0
     #define ALLOC_ERR 1
     #define REALLOC_ERR 2
     #define NULL_PTR_ERR 3
+	#define OUT_OF_BOUND_ERR 4
     
     #define NO_EL -1
     
@@ -26,13 +29,14 @@
     typedef struct          vector vector;
     typedef unsigned char   raw_byte;
     typedef raw_byte        *raw_data;
-    
+    typedef **raw_data      raw_data_ptr;
+	
     struct vector
     { 
         char *data;
         size_t size;
         size_t capacity;
-        
+        pthread_rwlock_t *rwlock;
     };
     
     uint8_t vector_init(size_t, size_t, vector **);

@@ -2,7 +2,7 @@
 
 static uint8_t is_full(vector *inst)
 {
-    if (inst->size >= inst->capacity)
+    if (inst != NULL && inst->size >= inst->capacity)
         return true;
     else
         return false;
@@ -10,7 +10,7 @@ static uint8_t is_full(vector *inst)
 
 static uint8_t is_out_range(vector *inst,size_t index)
 {
-    if (inst->size <= index)
+    if (inst != NULL && inst->size <= index)
         return true;
     else 
         return false;
@@ -20,6 +20,7 @@ static uint8_t resize(vector *inst)
 {
     size_t new_capacity = inst->capacity * REALLOC_COEFFICIENT(inst->capacity);
     char *new_data      = realloc(inst->data, new_capacity);
+    
     if (new_data == NULL)
     {
         return REALLOC_ERR;
@@ -31,6 +32,11 @@ static uint8_t resize(vector *inst)
 
 static uint8_t insert(char *insert_pos, char *value, size_t type_size)
 {
+    if (insert_pos == NULL)
+    {
+        return NULL_PTR_ERR;
+    }
+    
     for (size_t i = 0; i < type_size; i++)
     {
         insert_pos[i] = value[i];
@@ -56,9 +62,10 @@ uint8_t vector_init(size_t capacity, size_t data_type_size, vector **res_vector)
     }
     memset(data, 0, allocated_bytes);
     
-    new_vector->data = data;
-    new_vector->size = 0;
+    new_vector->data     = data;
+    new_vector->size     = 0;
     new_vector->capacity = capacity;
+    new_vector->rwlock   = NULL;
     
     *res_vector = new_vector;
     return NO_ERR;
@@ -66,9 +73,35 @@ uint8_t vector_init(size_t capacity, size_t data_type_size, vector **res_vector)
 
 uint8_t vector_destroy(vector *inst)
 {
+    if (inst == NULL)
+    {
+        return NULL_PTR_ERR;
+    }
+    
     free(inst->data);
     free(inst);
     return NO_ERR;
+}
+
+uint8_t vector_multithread_init(size_t capacity, size_t data_type_size, vector **res_vector)
+{
+    uint8_t init_res = vector_init(capacity, data_type_size, res_vector);
+    if (init_res == NO_ERR)
+    {
+        res_vector->rwlock = PTHREAD_RWLOCK_INITIALIZER;
+    }    
+    return init_res;
+}
+
+uint8_t vector_multithread_destroy(vector *inst)
+{
+    if (inst == NULL)
+    {
+        return NULL_PTR_ERR;
+    }
+    
+    int destroy_res = pthread_rwlock_destroy(inst->rwlock);
+    return vector_destroy(inst);
 }
 
 uint8_t add(vector *inst, char *el, size_t el_type_size)
@@ -85,16 +118,22 @@ uint8_t add(vector *inst, char *el, size_t el_type_size)
     }
   
     char *insert_pos = ((inst->data) + (inst->size * el_type_size));
-    insert(insert_pos, el, el_type_size); 
+    memcpy(insert_pos, el, el_type_size);
+    //insert(insert_pos, el, el_type_size); 
     inst->size = inst->size + 1;
     return NO_ERR;
 }
 
 uint8_t get_value(vector *inst, size_t index, size_t el_type_size, char *value)
 {
-    if (inst == NULL && is_out_range(inst, index))
+    if (inst == NULL)
     {
         return NULL_PTR_ERR;
+    }
+    
+    if (is_out_range(inst, index))
+    {
+        return OUT_OF_BOUND_ERR;
     }
     
     char *val_pos = ((inst->data) + (index * el_type_size));

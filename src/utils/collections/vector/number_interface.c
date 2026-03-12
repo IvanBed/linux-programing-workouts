@@ -15,31 +15,31 @@ uint8_t add_double(vector *inst, double el)
 int64_t get_int(vector *inst, size_t index)
 {    
     char    num_buff[TYPE_64];
-    int64_t res;
+    int64_t el;
     
     uint8_t res = get_value(inst, index, TYPE_64, num_buff);
     if (res != NO_ERR)
     {
         return NO_EL;
     }
-    res = *((int*)num_buff);
+    el = *((int*)num_buff);
     
-    return res;
+    return el;
 }
 
 double get_double(vector *inst, size_t index)
 {    
     char    num_buff[TYPE_64];
-    double  res;
+    double  el;
     
     uint8_t res = get_value(inst, index, TYPE_64, num_buff);
     if (res != NO_ERR)
     {
         return NO_EL;
     }
-    res = *((double*)num_buff);
+    el = *((double*)num_buff);
     
-    return res;
+    return el;
 }
 
 
