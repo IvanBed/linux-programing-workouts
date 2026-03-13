@@ -88,7 +88,10 @@ uint8_t vector_multithread_init(size_t capacity, size_t data_type_size, vector *
     uint8_t init_res = vector_init(capacity, data_type_size, res_vector);
     if (init_res == NO_ERR)
     {
-        res_vector->rwlock = PTHREAD_RWLOCK_INITIALIZER;
+        if (pthread_rwlock_init((*res_vector)->rwlock, NULL) == -1)
+        {
+            return LOCK_INIT_ERR;
+        }
     }    
     return init_res;
 }
@@ -119,12 +122,11 @@ uint8_t add(vector *inst, char *el, size_t el_type_size)
   
     char *insert_pos = ((inst->data) + (inst->size * el_type_size));
     memcpy(insert_pos, el, el_type_size);
-    //insert(insert_pos, el, el_type_size); 
     inst->size = inst->size + 1;
     return NO_ERR;
 }
 
-uint8_t get_value(vector *inst, size_t index, size_t el_type_size, char *value)
+uint8_t get(vector *inst, size_t index, size_t el_type_size, char *value)
 {
     if (inst == NULL)
     {
@@ -143,4 +145,42 @@ uint8_t get_value(vector *inst, size_t index, size_t el_type_size, char *value)
     }
     
     return NO_ERR;
+}
+
+uint8_t add_multithread(vector *inst, char *el, size_t el_type_size)
+{
+    if (inst == NULL)
+    {
+        return NULL_PTR_ERR;
+    }
+    
+    if (inst->rwlock == NULL)
+    {
+        return LOCK_INIT_ERR;
+    }
+    
+    pthread_rwlock_wrlock(inst->rwlock);
+    uint8_t res = add(inst, el, el_type_size);
+    pthread_rwlock_unlock(inst->rwlock);
+
+    return NO_ERR;
+}
+
+uint8_t get_multithread(vector *inst, size_t index, size_t el_type_size, char *value)
+{
+    if (inst == NULL)
+    {
+        return NULL_PTR_ERR;
+    }
+    
+    if (inst->rwlock == NULL)
+    {
+        return LOCK_INIT_ERR;
+    }
+        
+    pthread_rwlock_rdlock(inst->rwlock);
+    uint8_t res = get(inst, index, el_type_size, value);
+    pthread_rwlock_unlock(inst->rwlock);
+    
+    return res;
 }

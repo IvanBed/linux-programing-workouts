@@ -17,7 +17,7 @@ int64_t get_int(vector *inst, size_t index)
     char    num_buff[TYPE_64];
     int64_t el;
     
-    uint8_t res = get_value(inst, index, TYPE_64, num_buff);
+    uint8_t res = get(inst, index, TYPE_64, num_buff);
     if (res != NO_ERR)
     {
         return NO_EL;
@@ -32,7 +32,7 @@ double get_double(vector *inst, size_t index)
     char    num_buff[TYPE_64];
     double  el;
     
-    uint8_t res = get_value(inst, index, TYPE_64, num_buff);
+    uint8_t res = get(inst, index, TYPE_64, num_buff);
     if (res != NO_ERR)
     {
         return NO_EL;

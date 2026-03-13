@@ -23,7 +23,7 @@ char * get_string(vector *inst, size_t index)
     char    string_ptr_buff[ptr_size]; 
     char    *el;
     
-    uint8_t res = get_value(inst, index, ptr_size, string_ptr_buff);
+    uint8_t res = get(inst, index, ptr_size, string_ptr_buff);
     if (res != NO_ERR)
     {
         return NO_EL;

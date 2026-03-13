@@ -9,12 +9,14 @@
     #include <pthread.h>
 
     #define REALLOC_COEFFICIENT(x) ((1024.0/(x + 128.0) + 1.0))  
+    
     //ERROR_CODE
     #define NO_ERR 0
     #define ALLOC_ERR 1
     #define REALLOC_ERR 2
     #define NULL_PTR_ERR 3
-	#define OUT_OF_BOUND_ERR 4
+    #define OUT_OF_BOUND_ERR 4
+     #define LOCK_INIT_ERR 5
     
     #define NO_EL -1
     
@@ -30,7 +32,7 @@
     typedef unsigned char   raw_byte;
     typedef raw_byte        *raw_data;
     typedef **raw_data      raw_data_ptr;
-	
+    
     struct vector
     { 
         char *data;
@@ -43,6 +45,6 @@
     uint8_t vector_destroy(vector *);
     
     uint8_t add(vector *, char *, size_t);
-    uint8_t get_value(vector *, size_t, size_t, char *);
+    uint8_t get(vector *, size_t, size_t, char *);
     
 #endif
