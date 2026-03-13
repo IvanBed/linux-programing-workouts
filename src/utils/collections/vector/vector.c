@@ -147,6 +147,23 @@ uint8_t get(vector *inst, size_t index, size_t el_type_size, char *value)
     return NO_ERR;
 }
 
+uint8_t set(vector *inst, size_t index, size_t el_type_size, char *el)
+{
+    if (inst == NULL)
+    {
+        return NULL_PTR_ERR;
+    }
+    
+    if (is_out_range(inst, index))
+    {
+        return OUT_OF_BOUND_ERR;
+    }
+    
+    char *insert_pos = ((inst->data) + (index * el_type_size));
+    memcpy(insert_pos, el, el_type_size);
+    return NO_ERR;
+}
+
 uint8_t add_multithread(vector *inst, char *el, size_t el_type_size)
 {
     if (inst == NULL)
