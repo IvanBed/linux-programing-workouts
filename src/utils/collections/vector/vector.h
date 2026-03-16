@@ -16,7 +16,7 @@
     #define REALLOC_ERR 2
     #define NULL_PTR_ERR 3
     #define OUT_OF_BOUND_ERR 4
-     #define LOCK_INIT_ERR 5
+    #define LOCK_INIT_ERR 5
     
     #define NO_EL -1
     
