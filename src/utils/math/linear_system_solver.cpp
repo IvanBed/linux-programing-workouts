@@ -1,11 +1,28 @@
+#include <bits/stdc++.h>
 #include <iostream>
 #include <vector>
+#include <cstdint>
+#include <iomanip>
+
+#define CONSIST_AND_ONE_SOLUTION 0
+#define CONSIST_AND_INF_SOLUTION 1
+#define NOT_CONSIST              2
+
+#define EPSILON 0.0000000000001
 
 using namespace std;
 
 void print_matrix(vector<vector<double>> &);
 
-double abs(double num)
+double is_zero_limit(double num)
+{
+    if (-1 * EPSILON < num && num < EPSILON)
+        return 0;
+    else
+        return num;
+}
+
+double my_abs(double num)
 {
     if (num < 0)
         return num * (-1);
@@ -13,17 +30,25 @@ double abs(double num)
         return num;
 }
 
-void add_lines(vector<vector<double>> &matrix, size_t row_a, size_t row_b)
+double get_limit(double num)
+{
+	int64_t int_part = round(num);
+	if (my_abs(num - int_part) < EPSILON)
+		return (double)int_part;
+	else 
+		return num;
+}
+
+void add_rows(vector<vector<double>> &matrix, size_t row_a, size_t row_b)
 {
     for (size_t i = 0; i < matrix[row_a].size(); i++)
     {
-        matrix[row_b][i] = matrix[row_b][i] + matrix[row_a][i];
+        matrix[row_b][i] = is_zero_limit(matrix[row_b][i] + matrix[row_a][i]);    
     }
 }
 
 void fill_row(vector<vector<double>> &matrix, size_t row, double diff_coeff)
 {
-    cout << "diff_coeff: " << diff_coeff << endl;
     for (size_t i = 0; i < matrix[row].size(); i++)
     {
         matrix[row][i] = matrix[row][i] * diff_coeff;
@@ -37,25 +62,42 @@ void swap_rows(vector<vector<double>> &matrix, size_t row_a, size_t row_b)
 	matrix[row_a]       = temp;
 }
 
+size_t find_rank(vector<vector<double>> &matrix, size_t n, size_t m)
+{
+    size_t rank = 0;
+    for (size_t i = 0; i < n; i++)
+    {
+        bool all_zeros = true;;
+        for (size_t j = 0; j < m; j++)
+        {
+            if (is_zero_limit(matrix[i][j]) != 0)
+                all_zeros = false;
+        }
+        if (!all_zeros) rank++;
+    }
+   return rank; 
+}
+
 bool try_make_row_echelon_form(vector<vector<double>> &matrix, size_t start_pos)
 {
     double el = matrix[start_pos][start_pos];
     double diff_coeff;
     for (size_t i = start_pos + 1; i < matrix.size(); i++)
     {
-        if (matrix[i][start_pos] == 0)
+        if (is_zero_limit(matrix[i][start_pos]) == 0)
             continue;
 		
-        if (abs(el)< abs(matrix[i][start_pos])) 
+        diff_coeff = matrix[start_pos][start_pos] / matrix[i][start_pos];
+        
+        if (is_zero_limit(diff_coeff) == 0)
         {
             swap_rows(matrix, start_pos, i);
         }
-        diff_coeff = matrix[start_pos][start_pos] / matrix[i][start_pos];
-
-        fill_row(matrix, i, (-1.0) * diff_coeff);
-        add_lines(matrix, start_pos, i);
-        
-        print_matrix(matrix);
+        else 
+        {
+            fill_row(matrix, i, (-1.0) * diff_coeff);
+            add_rows(matrix, start_pos, i);            
+        }
     }
     return true;
 }
@@ -75,10 +117,10 @@ double find_xi(vector<vector<double>> &matrix, int row, vector<double> res)
 
 vector<double> find_roots(vector<vector<double>> &matrix)
 {
-    vector<double> res(matrix.size());
+    vector<double> res(matrix[0].size() - 1);
     double xi;
     
-    for (int i = matrix.size() - 1; i >= 0; i--)
+    for (int i = matrix[0].size() - 2; i >= 0; i--)
     {
         xi = find_xi(matrix, i, res);  
         res[i] = xi;
@@ -101,49 +143,94 @@ void print_matrix(vector<vector<double>> &matrix)
 
 void print_roots(vector<double> res)
 {
-    
-    for (size_t i =  0; i < res.size(); i++)
+    if (res.empty())
+		return;
+	
+	for (size_t i =  0; i < res.size(); i++)
     {
-        cout << res[i] << " ";
+        if (i == res.size() - 1)
+            cout << setprecision(6) << res[i];
+        else 
+            cout << setprecision(6) << res[i] << " ";
     }  
 }
 
-bool solve_linear_system(vector<vector<double>> &matrix, vector<double> solution)
+uint8_t solve_linear_system(vector<vector<double>> &matrix, vector<double> &solution)
 {
+	if (matrix.empty())
+	{
+		return NOT_CONSIST;
+	}
+	
 	vector<double> res;
-	for (size_t i = 0; i < matrix7.size() - 1; i++)
+	for (size_t i = 0; i < matrix.size() - 1; i++)
     {
-        try_make_row_echelon_form(matrix7, i);
+        try_make_row_echelon_form(matrix, i);
     }
-    solution = find_roots(matrix7);
-	return true;
+	
+	size_t vars_cnt = matrix[0].size() - 1;
+	
+	size_t base_matrix_rank = find_rank(matrix, matrix.size(), vars_cnt);
+	size_t augmented_matrix_rank = find_rank(matrix, matrix.size(), vars_cnt + 1);
+
+	if (base_matrix_rank < augmented_matrix_rank)
+	{
+		return NOT_CONSIST;
+	}
+	else 
+	{
+	    if (vars_cnt > base_matrix_rank)
+		{
+            return CONSIST_AND_INF_SOLUTION;
+		}	
+		else 
+		{
+			solution = find_roots(matrix);
+		    return CONSIST_AND_ONE_SOLUTION;
+		}	
+        
+	}
 }
 
-void test()
+void read_linear_system(vector<vector<double>> &matrix)
 {
-	vector<vector<double>> matrix = {{4,2,1}, {7,8,9}, {9, 1, 3}};
-    vector<vector<double>> matrix1 = {{4,2,1,6}, {7,8,9,4}, {9, 1, 3, 5}, {4, 2, 3, 12}};
-
-    vector<vector<double>> matrix2 = {{-1, -2, 2}, {-7, 1, -7}, {-1, 1, -2}};
-    vector<vector<double>> matrix3 = {{4, 2, 1, 1}, {7, 8, 9, 1}, {9, 1, 3, 2}};
-  
-    vector<vector<double>> matrix4  = {{4,2,3,-11},   {0  -1, -2, 1},   {-6, 5, 3, 0}};
-    
-    vector<vector<double>> matrix5  = {{-2, -2, 7, 24} ,  { -4, -3, 4, 25},   {5, 1 ,2,-9}};
-    
-    vector<vector<double>> matrix6  = {{-8, 0, 1, -12},  {1, 1, 1, -2},  {-7, 0, 6, -31}};
-    
-    vector<vector<double>> matrix7  = {{-4, -8, 5, -6},  {-3, 1, -2, -14},  {0, -1, 1, 1}};
-	vector<double> solution;
-	solve_linear_system(matrix7, solution);
-	print_roots(solution);
+    for (auto & row : matrix)
+	{
+		for (auto & el : row)
+		{
+			cin >> el;
+		}
+	}
 }
 
 int main() 
 {
-    
-
-    
- 
-    
+	size_t rows;
+	size_t columns;
+	vector<double> solution;
+	uint8_t res;
+	
+	cin >> rows;
+	cin >> columns;
+	vector<vector<double>> matrix(rows, vector<double>(columns + 1, 0));
+	
+	read_linear_system(matrix);
+	
+	
+	res = solve_linear_system(matrix, solution);
+	
+	if (res== NOT_CONSIST)
+	{
+		cout << "NO\n";
+	}
+	else if (res == CONSIST_AND_INF_SOLUTION)
+	{
+		cout << "INF\n";
+		
+	}
+	else 
+	{
+		cout << "YES\n";
+		print_roots(solution);
+	}
 }
