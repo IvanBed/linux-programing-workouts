@@ -38,7 +38,7 @@
         char *data;
         size_t size;
         size_t capacity;
-        pthread_rwlock_t *rwlock;
+        pthread_rwlock_t rwlock;
     };
     
     uint8_t vector_init(size_t, size_t, vector **);

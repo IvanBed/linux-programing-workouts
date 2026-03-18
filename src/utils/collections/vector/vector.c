@@ -54,7 +54,7 @@ uint8_t vector_init(size_t capacity, size_t data_type_size, vector **res_vector)
         return ALLOC_ERR;
     }
     
-    char *data =  malloc(allocated_bytes);
+    char *data = (char *) malloc(allocated_bytes);
     if (!data)
     {
         free(new_vector);
@@ -65,7 +65,6 @@ uint8_t vector_init(size_t capacity, size_t data_type_size, vector **res_vector)
     new_vector->data     = data;
     new_vector->size     = 0;
     new_vector->capacity = capacity;
-    new_vector->rwlock   = NULL;
     
     *res_vector = new_vector;
     return NO_ERR;
@@ -88,7 +87,7 @@ uint8_t vector_multithread_init(size_t capacity, size_t data_type_size, vector *
     uint8_t init_res = vector_init(capacity, data_type_size, res_vector);
     if (init_res == NO_ERR)
     {
-        if (pthread_rwlock_init((*res_vector)->rwlock, NULL) == -1)
+        if (pthread_rwlock_init(&((*res_vector)->rwlock), NULL) == -1)
         {
             return LOCK_INIT_ERR;
         }
@@ -103,7 +102,7 @@ uint8_t vector_multithread_destroy(vector *inst)
         return NULL_PTR_ERR;
     }
     
-    int destroy_res = pthread_rwlock_destroy(inst->rwlock);
+    int destroy_res = pthread_rwlock_destroy(&(inst->rwlock));
     return vector_destroy(inst);
 }
 
@@ -176,9 +175,9 @@ uint8_t add_multithread(vector *inst, char *el, size_t el_type_size)
         return LOCK_INIT_ERR;
     }
     
-    pthread_rwlock_wrlock(inst->rwlock);
+    pthread_rwlock_wrlock(&(inst->rwlock));
     uint8_t res = add(inst, el, el_type_size);
-    pthread_rwlock_unlock(inst->rwlock);
+    pthread_rwlock_unlock(&(inst->rwlock));
 
     return NO_ERR;
 }
@@ -195,9 +194,9 @@ uint8_t get_multithread(vector *inst, size_t index, size_t el_type_size, char *v
         return LOCK_INIT_ERR;
     }
         
-    pthread_rwlock_rdlock(inst->rwlock);
+    pthread_rwlock_rdlock(&(inst->rwlock));
     uint8_t res = get(inst, index, el_type_size, value);
-    pthread_rwlock_unlock(inst->rwlock);
+    pthread_rwlock_unlock(&(inst->rwlock));
     
     return res;
 }
