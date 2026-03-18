@@ -1,5 +1,5 @@
 CC = gcc # Ccompiler
-CFLAGS = -fPIC -Wall -Wextra# C++ flags
+CFLAGS = -fPIC -Wall -Wextra# C flags
 RM = rm -f   # rm command
 
 LIBTARGET = libvector.so # target
