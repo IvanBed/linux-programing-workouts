@@ -9,6 +9,10 @@
 #define NOT_CONSIST              2
 
 #define EPSILON 0.0000000000001
+#define PRECISION 6
+
+
+// Gaussian elimination
 
 using namespace std;
 
@@ -117,10 +121,11 @@ double find_xi(vector<vector<double>> &matrix, int row, vector<double> res)
 
 vector<double> find_roots(vector<vector<double>> &matrix)
 {
-    vector<double> res(matrix[0].size() - 1);
+    size_t x_cnt  = matrix[0].size() - 1;
+	vector<double> res(x_cnt);
     double xi;
     
-    for (int i = matrix[0].size() - 2; i >= 0; i--)
+    for (int i = x_cnt - 1; i >= 0; i--)
     {
         xi = find_xi(matrix, i, res);  
         res[i] = xi;
@@ -149,9 +154,9 @@ void print_roots(vector<double> res)
 	for (size_t i =  0; i < res.size(); i++)
     {
         if (i == res.size() - 1)
-            cout << setprecision(6) << res[i];
+            cout << setprecision(PRECISION) << res[i];
         else 
-            cout << setprecision(6) << res[i] << " ";
+            cout << setprecision(PRECISION) << res[i] << " ";
     }  
 }
 
@@ -187,8 +192,7 @@ uint8_t solve_linear_system(vector<vector<double>> &matrix, vector<double> &solu
 		{
 			solution = find_roots(matrix);
 		    return CONSIST_AND_ONE_SOLUTION;
-		}	
-        
+		}	       
 	}
 }
 
@@ -215,8 +219,6 @@ int main()
 	vector<vector<double>> matrix(rows, vector<double>(columns + 1, 0));
 	
 	read_linear_system(matrix);
-	
-	
 	res = solve_linear_system(matrix, solution);
 	
 	if (res== NOT_CONSIST)
@@ -225,8 +227,7 @@ int main()
 	}
 	else if (res == CONSIST_AND_INF_SOLUTION)
 	{
-		cout << "INF\n";
-		
+		cout << "INF\n";	
 	}
 	else 
 	{
