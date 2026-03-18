@@ -18,7 +18,7 @@ static uint8_t is_out_range(vector *inst,size_t index)
 
 static uint8_t resize(vector *inst)
 {
-    size_t new_capacity = inst->capacity * REALLOC_COEFFICIENT(inst->capacity);
+    size_t new_capacity = (inst->capacity * REALLOC_COEFFICIENT(inst->capacity));
     char *new_data      = realloc(inst->data, new_capacity);
     
     if (new_data == NULL)
