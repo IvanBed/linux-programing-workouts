@@ -42,7 +42,7 @@ double get_double(vector *inst, size_t index)
     return el;
 }
 
-
+/*
 int main() 
 {
     vector *test = NULL;
@@ -62,4 +62,4 @@ int main()
         printf("%d\n", *res1);        
     }
   
-}
+}*/

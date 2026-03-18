@@ -31,7 +31,7 @@
     typedef struct          vector vector;
     typedef unsigned char   raw_byte;
     typedef raw_byte        *raw_data;
-    typedef **raw_data      raw_data_ptr;
+    //typedef **raw_data      raw_data_ptr;
     
     struct vector
     { 
@@ -39,6 +39,7 @@
         size_t size;
         size_t capacity;
         pthread_rwlock_t rwlock;
+        uint8_t lock_init;
     };
     
     uint8_t vector_init(size_t, size_t, vector **);
