@@ -21,9 +21,6 @@
     #define NO_EL -1
     
     #define REALLOC_TRIES 10
-    
-    #define TYPE_64 64
-    #define TYPE_32 32
 
     #define true 1 
     #define false 0
