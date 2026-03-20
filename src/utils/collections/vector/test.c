@@ -108,17 +108,24 @@ void test_double()
 void test_str()
 {
     vector *test = NULL;
-    str_vector_init(20, &test);
+    str_vector_init(2, &test);
     char *t1 = "aaa";
     char *t2 = "bbb";
     char *t3 = "ccc";
     add_string(test, t1);
     add_string(test, t2);
     add_string(test, t3);
-    for (size_t i = 0; i < test->size; i++)
+    
+    char *res1 = get_string(test, 0);
+    char *res2 = get_string(test, 1);
+    char *res3 = get_string(test, 2);
+    printf("%s\n", res1);    
+    printf("%s\n", res2);    
+    printf("%s\n", res3);    
+    /*for (size_t i = 0; i < test->size; i++)
     {
         printf("%s\n", get_string(test, i));        
-    }
+    }*/
     printf("size: %d\n", test->size);
     str_vector_destroy(test);
 }
@@ -127,5 +134,5 @@ int main()
 {
     test_int();
     test_double();
-    //test_str();
+    test_str();
 }
