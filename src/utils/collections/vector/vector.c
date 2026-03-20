@@ -16,10 +16,10 @@ static uint8_t is_out_range(vector *inst,size_t index)
         return false;
 }
 
-static uint8_t resize(vector *inst)
+static uint8_t resize(vector *inst, size_t type_size)
 {
     size_t new_capacity = (inst->capacity * REALLOC_COEFFICIENT(inst->capacity));
-    char *new_data      = realloc(inst->data, new_capacity);
+    char *new_data      = realloc(inst->data, new_capacity * type_size);
     
     if (new_data == NULL)
     {
@@ -121,7 +121,7 @@ uint8_t add(vector *inst, char *el, size_t el_type_size)
     if (is_full(inst))
     {
         size_t tries = 0;
-        while (resize(inst) != NO_ERR && tries++ < REALLOC_TRIES) {}
+        while (resize(inst, el_type_size) != NO_ERR && tries++ < REALLOC_TRIES) {}
     }
   
     char *insert_pos = ((inst->data) + (inst->size * el_type_size));

@@ -3,7 +3,7 @@
 void test_int()
 {
     vector *test = NULL;
-    vector_init(20, sizeof(int64_t),&test);
+    vector_init(1, sizeof(int64_t),&test);
     add_int(test, 12);
     add_int(test, 13);
     add_int(test, 14);
@@ -12,6 +12,71 @@ void test_int()
     add_int(test, 17);
     add_int(test, 19);
     add_int(test, 123);
+	add_int(test, 12);
+    add_int(test, 13);
+    add_int(test, 14);
+    add_int(test, 15);
+    add_int(test, 16);
+    add_int(test, 17);
+    add_int(test, 19);
+    add_int(test, 123);
+	add_int(test, 12);
+    add_int(test, 13);
+    add_int(test, 14);
+    add_int(test, 15);
+    add_int(test, 16);
+    add_int(test, 17);
+    add_int(test, 19);
+    add_int(test, 123);
+	add_int(test, 12);
+    add_int(test, 13);
+    add_int(test, 14);
+    add_int(test, 15);
+    add_int(test, 16);
+    add_int(test, 17);
+    add_int(test, 19);
+    add_int(test, 123);
+    add_int(test, 12);
+    add_int(test, 13);
+    add_int(test, 14);
+    add_int(test, 15);
+    add_int(test, 16);
+    add_int(test, 17);
+    add_int(test, 19);
+    add_int(test, 123);
+	add_int(test, 12);
+    add_int(test, 13);
+    add_int(test, 14);
+    add_int(test, 15);
+    add_int(test, 16);
+    add_int(test, 17);
+    add_int(test, 19);
+    add_int(test, 123);
+	add_int(test, 12);
+    add_int(test, 13);
+    add_int(test, 14);
+    add_int(test, 15);
+    add_int(test, 16);
+    add_int(test, 17);
+    add_int(test, 19);
+    add_int(test, 123);
+	add_int(test, 12);
+    add_int(test, 13);
+    add_int(test, 14);
+    add_int(test, 15);
+    add_int(test, 16);
+    add_int(test, 17);
+    add_int(test, 19);
+    add_int(test, 123);
+	add_int(test, 12);
+    add_int(test, 13);
+    add_int(test, 14);
+    add_int(test, 15);
+    add_int(test, 16);
+    add_int(test, 17);
+    add_int(test, 19);
+    add_int(test, 123);
+	
     for (size_t i = 0; i < test->size; i++)
     {
         printf("%d\n", get_int(test, i));        
@@ -23,7 +88,7 @@ void test_int()
 void test_double()
 {
     vector *test = NULL;
-    double_vector_init(20, &test);
+    double_vector_init(1, &test);
     add_double(test, 12.5);
     add_double(test, 13.56756);
     add_double(test, 14.3425);
@@ -62,5 +127,5 @@ int main()
 {
     test_int();
     test_double();
-    test_str();
+    //test_str();
 }
