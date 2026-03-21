@@ -25,6 +25,29 @@ double get_limit(double num)
 		return num;
 }
 
+void add_rows(std::vector<std::vector<double>> &matrix, size_t row_a, size_t row_b)
+{
+    for (size_t i = 0; i < matrix[row_a].size(); i++)
+    {
+        matrix[row_b][i] = is_zero_limit(matrix[row_b][i] + matrix[row_a][i]);    
+    }
+}
+
+void fill_row(std::vector<std::vector<double>> &matrix, size_t row, double diff_coeff)
+{
+    for (size_t i = 0; i < matrix[row].size(); i++)
+    {
+        matrix[row][i] = matrix[row][i] * diff_coeff;
+    }
+}
+
+void swap_rows(std::vector<std::vector<double>> &matrix, size_t row_a, size_t row_b)
+{ 
+	std::vector<double> temp = matrix[row_b];
+	matrix[row_b]       = matrix[row_a];
+	matrix[row_a]       = temp;
+}
+
 size_t find_rank(std::vector<std::vector<double>> const &matrix, size_t n, size_t m)
 {
     size_t rank = 0;
@@ -76,6 +99,60 @@ std::vector<std::vector<double>> make_transpose_matrix(std::vector<std::vector<d
 		}		
 	}
     return 	transpose_matrix;
+}
+
+int64_t try_find_nonzero_el(std::vector<std::vector<double>> &matrix, size_t col)
+{
+    for (size_t i = col; i < matrix.size(); i++)
+    {
+        std::cout << matrix[i][col] << "\n";
+        if (is_zero_limit(matrix[i][col]) != 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+double get_determinant(std::vector<std::vector<double>> matrix, size_t pos)
+{
+    if (pos == matrix.size() - 1)
+    {
+        return matrix[pos][pos];
+    }
+    
+    int64_t nonzero_el_pos;
+    double determinant_sigh = 1;
+    double sub_determinant  = 1;
+    std::cout << "test\n";
+    if (is_zero_limit(matrix[pos][pos]) == 0)
+    {
+        std::cout << "pos: " << pos << "\n";
+        nonzero_el_pos = try_find_nonzero_el(matrix, pos);
+        if (nonzero_el_pos == NOT_FOUND)
+        {
+            return 0;
+        }
+        else
+        {
+            determinant_sigh *= -1;
+            swap_rows(matrix, pos, (size_t)nonzero_el_pos);
+        }
+    }
+       
+    double diff_coeff;
+    sub_determinant = matrix[pos][pos];
+    
+    for (size_t i = pos + 1; i < matrix.size(); i++)
+    {
+        if (is_zero_limit(matrix[i][pos]) == 0)
+            continue;
+        
+        diff_coeff = matrix[i][pos] / matrix[pos][pos];
+        fill_row(matrix, pos, (-1.0) * diff_coeff);
+        add_rows(matrix, pos, i);    
+    }
+    return determinant_sigh * sub_determinant * get_determinant(matrix, pos + 1);
 }
 
 void read_matrix(std::vector<std::vector<double>> &matrix)

@@ -2,29 +2,6 @@
 
 // Gaussian elimination
 
-void add_rows(std::vector<std::vector<double>> &matrix, size_t row_a, size_t row_b)
-{
-    for (size_t i = 0; i < matrix[row_a].size(); i++)
-    {
-        matrix[row_b][i] = is_zero_limit(matrix[row_b][i] + matrix[row_a][i]);    
-    }
-}
-
-void fill_row(std::vector<std::vector<double>> &matrix, size_t row, double diff_coeff)
-{
-    for (size_t i = 0; i < matrix[row].size(); i++)
-    {
-        matrix[row][i] = matrix[row][i] * diff_coeff;
-    }
-}
-
-void swap_rows(std::vector<std::vector<double>> &matrix, size_t row_a, size_t row_b)
-{ 
-	std::vector<double> temp = matrix[row_b];
-	matrix[row_b]       = matrix[row_a];
-	matrix[row_a]       = temp;
-}
-
 bool try_make_row_echelon_form(std::vector<std::vector<double>> &matrix, size_t start_pos)
 {
     double el = matrix[start_pos][start_pos];
