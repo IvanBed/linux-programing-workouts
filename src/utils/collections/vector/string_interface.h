@@ -5,6 +5,6 @@
     uint8_t str_vector_init(size_t, vector **);
     uint8_t str_vector_destroy(vector *);
     uint8_t add_string(vector *, char *);
-    char * get_string(vector *, size_t);
+    uint8_t get_string(vector *, size_t, char *);
 
 #endif

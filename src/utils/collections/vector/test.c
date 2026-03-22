@@ -1,88 +1,71 @@
 #include "number_interface.h"
+#include <pthread.h>
 
 void test_int()
 {
     vector *test = NULL;
-    vector_init(1, sizeof(int64_t),&test);
-    add_int(test, 12);
-    add_int(test, 13);
-    add_int(test, 14);
-    add_int(test, 15);
-    add_int(test, 16);
-    add_int(test, 17);
-    add_int(test, 19);
-    add_int(test, 123);
-    add_int(test, 12);
-    add_int(test, 13);
-    add_int(test, 14);
-    add_int(test, 15);
-    add_int(test, 16);
-    add_int(test, 17);
-    add_int(test, 19);
-    add_int(test, 123);
-    add_int(test, 12);
-    add_int(test, 13);
-    add_int(test, 14);
-    add_int(test, 15);
-    add_int(test, 16);
-    add_int(test, 17);
-    add_int(test, 19);
-    add_int(test, 123);
-    add_int(test, 12);
-    add_int(test, 13);
-    add_int(test, 14);
-    add_int(test, 15);
-    add_int(test, 16);
-    add_int(test, 17);
-    add_int(test, 19);
-    add_int(test, 123);
-    add_int(test, 12);
-    add_int(test, 13);
-    add_int(test, 14);
-    add_int(test, 15);
-    add_int(test, 16);
-    add_int(test, 17);
-    add_int(test, 19);
-    add_int(test, 123);
-    add_int(test, 12);
-    add_int(test, 13);
-    add_int(test, 14);
-    add_int(test, 15);
-    add_int(test, 16);
-    add_int(test, 17);
-    add_int(test, 19);
-    add_int(test, 123);
-    add_int(test, 12);
-    add_int(test, 13);
-    add_int(test, 14);
-    add_int(test, 15);
-    add_int(test, 16);
-    add_int(test, 17);
-    add_int(test, 19);
-    add_int(test, 123);
-    add_int(test, 12);
-    add_int(test, 13);
-    add_int(test, 14);
-    add_int(test, 15);
-    add_int(test, 16);
-    add_int(test, 17);
-    add_int(test, 19);
-    add_int(test, 123);
-    add_int(test, 12);
-    add_int(test, 13);
-    add_int(test, 14);
-    add_int(test, 15);
-    add_int(test, 16);
-    add_int(test, 17);
-    add_int(test, 19);
-    add_int(test, 123);
+    int_vector_init(1, &test);
+    add_int(test, 12, false);
+    add_int(test, 13, false);
+    add_int(test, 14, false);
+    add_int(test, 15, false);
+    add_int(test, 16, false);
+    add_int(test, 17, false);
+    add_int(test, 19, false);
+    add_int(test, 123, false);
+    add_int(test, 12, false);
+    add_int(test, 13, false);
+    add_int(test, 14, false);
+    add_int(test, 15, false);
+    add_int(test, 16, false);
+    add_int(test, 17, false);
+    add_int(test, 19, false);
+    add_int(test, 123, false);
+    add_int(test, 12, false);
+    add_int(test, 13, false);
+    add_int(test, 14, false);
+    add_int(test, 15, false);
+    add_int(test, 16, false);
+    add_int(test, 17, false);
+    add_int(test, 19, false);
+    add_int(test, 123, false);
+    add_int(test, 12, false);
+    add_int(test, 13, false);
+    add_int(test, 14, false);
+    add_int(test, 15, false);
+    add_int(test, 16, false);
+    add_int(test, 17, false);
+    add_int(test, 19, false);
+    add_int(test, 123, false);
+    add_int(test, 12, false);
+    add_int(test, 13, false);
+    add_int(test, 14, false);
+    add_int(test, 15, false);
+    add_int(test, 16, false);
+    add_int(test, 17, false);
+    add_int(test, 19, false);
+    add_int(test, 123, false);
+    add_int(test, 12, false);
+    add_int(test, 13, false);
+    add_int(test, 14, false);
+    add_int(test, 15, false);
+    add_int(test, 16, false);
+    add_int(test, 17, false);
+    add_int(test, 19, false);
+    add_int(test, 123, false);
     
+    set_int(test, 0,10000, false);
+    set_int(test, 1,10000, false);
+    set_int(test, 2,10000, false);
+    set_int(test, 3,10000, false);
+    set_int(test, 4,10000, false);
+    set_int(test, 5,10000, false);
     for (size_t i = 0; i < test->size; i++)
     {
-        printf("%d\n", get_int(test, i));        
+        printf("%d\n", get_int(test, i, false));        
     }
     printf("size: %d\n", test->size);
-    //int_vector_destroy(test);
+    int_vector_destroy(test);
 }
 
 void test_double()
@@ -108,31 +91,86 @@ void test_double()
 void test_str()
 {
     vector *test = NULL;
-    str_vector_init(2, &test);
+    str_vector_init(1, &test);
     char *t1 = "aaa";
     char *t2 = "bbb";
     char *t3 = "ccc";
+    char *t4 = malloc(4);
+    strcpy(t4, t1);
     add_string(test, t1);
     add_string(test, t2);
     add_string(test, t3);
-    
-    char *res1 = get_string(test, 0);
-    char *res2 = get_string(test, 1);
-    char *res3 = get_string(test, 2);
-    printf("%s\n", res1);    
-    printf("%s\n", res2);    
-    printf("%s\n", res3);    
-    /*for (size_t i = 0; i < test->size; i++)
+    add_string(test, t4);
+    add_string(test, "sdfsd");
+    add_string(test, "sdw11");
+    add_string(test, "132rsdfasdfsdf");
+    for (size_t i = 0; i < test->size; i++)
     {
-        printf("%s\n", get_string(test, i));        
-    }*/
+        char *res1;
+        get_string(test, i, res1);
+        printf("%s\n", res1);        
+    }
     printf("size: %d\n", test->size);
     str_vector_destroy(test);
+}
+
+void *set_data(void *data)
+{
+    int64_t test = 0;
+    vector *store_inst = (vector *)data;
+    while(1)
+    {
+        set_int(store_inst, 0, ++test, true);
+        sleep(10);
+    }
+    return NULL;
+
+}
+
+void *get_data(void *data)
+{
+    vector *store_inst = (vector *)data;
+    while(1)
+    {
+        int64_t val = get_int(store_inst, 0, true);
+        printf("value: %d\n", val);
+        sleep(10);
+    }
+
+    return NULL;
+
+}
+
+void test_multithread()
+{
+    vector *store_inst = NULL;
+    int_vector_multithread_init(5, &store_inst);
+    
+    pthread_t thread_setter, thread_getter;
+
+    //add_int(store_inst, 12, true);
+    //add_int(store_inst, 13, false);
+
+    if (pthread_create(&thread_setter, NULL, set_data, (void *)store_inst) != 0) {
+        fprintf(stderr, "Could not start setter thread!\n");
+        return 1;
+    }
+
+    if (pthread_create(&thread_getter, NULL, get_data, (void *)store_inst) != 0) { 
+        fprintf(stderr, "Could not start getter thread!\n");
+        return 1;
+    }
+ 
+    pthread_join(thread_setter, NULL);
+    pthread_join(thread_getter, NULL);
+
+    int_vector_multithread_destroy(store_inst);
 }
 
 int main() 
 {
     test_int();
-    test_double();
-    test_str();
+    //test_double();
+    //test_str();
+    //test_multithread();
 }

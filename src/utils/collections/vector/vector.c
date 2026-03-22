@@ -143,11 +143,7 @@ uint8_t get(vector *inst, size_t index, size_t el_type_size, char *value)
     }
     
     char *val_pos = ((inst->data) + (index * el_type_size));
-    for (size_t i = 0; i < el_type_size; i++)
-    {
-        value[i] = val_pos[i];
-    }
-    
+    memcpy(value, val_pos, el_type_size); 
     return NO_ERR;
 }
 
@@ -203,5 +199,24 @@ uint8_t get_multithread(vector *inst, size_t index, size_t el_type_size, char *v
     uint8_t res = get(inst, index, el_type_size, value);
     pthread_rwlock_unlock(&(inst->rwlock));
     
+    return res;
+}
+
+uint8_t set_multithread(vector *inst, size_t index, size_t el_type_size, char *el)
+{
+    if (inst == NULL)
+    {
+        return NULL_PTR_ERR;
+    }
+    
+    if (!inst->lock_init)
+    {
+        return LOCK_INIT_ERR;
+    }
+
+    pthread_rwlock_wrlock(&(inst->rwlock));
+    uint8_t res = set(inst, index, el_type_size, el);
+    pthread_rwlock_unlock(&(inst->rwlock));
+
     return res;
 }

@@ -42,7 +42,15 @@
     uint8_t vector_init(size_t, size_t, vector **);
     uint8_t vector_destroy(vector *);
     
+    uint8_t vector_multithread_init(size_t, size_t, vector **);
+    uint8_t vector_multithread_destroy(vector *);
+
     uint8_t add(vector *, char *, size_t);
     uint8_t get(vector *, size_t, size_t, char *);
+    uint8_t set(vector *, size_t, size_t, char *);
+
+    uint8_t add_multithread(vector *, char *, size_t );
+    uint8_t get_multithread(vector *, size_t, size_t, char *);
+    uint8_t set_multithread(vector *, size_t, size_t, char *);
     
 #endif
