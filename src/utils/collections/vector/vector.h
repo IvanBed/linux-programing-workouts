@@ -36,7 +36,13 @@
         size_t size;
         size_t capacity;
         pthread_rwlock_t rwlock;
-        uint8_t lock_init;
+        
+		uint8_t realloc_process;
+		pthread_mutex_t mtx;
+        
+		
+		uint8_t lock_init;
+		
     };
     
     uint8_t vector_init(size_t, size_t, vector **);

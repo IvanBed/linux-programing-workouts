@@ -121,7 +121,7 @@ void *set_data(void *data)
     while(1)
     {
         set_int(store_inst, 0, ++test, true);
-        sleep(10);
+        sleep(3);
     }
     return NULL;
 
@@ -133,12 +133,24 @@ void *get_data(void *data)
     while(1)
     {
         int64_t val = get_int(store_inst, 0, true);
-        printf("value: %d\n", val);
-        sleep(10);
+        printf("GETTER 1 value: %d\n", val);
+        sleep(1);
     }
 
     return NULL;
+}
 
+void *get_data2(void *data)
+{
+    vector *store_inst = (vector *)data;
+    while(1)
+    {
+        int64_t val = get_int(store_inst, 1, true);
+        printf("GETTER 2 value: %d\n", val);
+        sleep(1);
+    }
+
+    return NULL;
 }
 
 void test_multithread()
@@ -146,10 +158,10 @@ void test_multithread()
     vector *store_inst = NULL;
     int_vector_multithread_init(5, &store_inst);
     
-    pthread_t thread_setter, thread_getter;
+    pthread_t thread_setter, thread_getter, thread_getter2;
 
-    //add_int(store_inst, 12, true);
-    //add_int(store_inst, 13, false);
+    add_int(store_inst, 1, false);
+    add_int(store_inst, 2, false);
 
     if (pthread_create(&thread_setter, NULL, set_data, (void *)store_inst) != 0) {
         fprintf(stderr, "Could not start setter thread!\n");
@@ -161,9 +173,15 @@ void test_multithread()
         return 1;
     }
  
+     if (pthread_create(&thread_getter2, NULL, get_data2, (void *)store_inst) != 0) { 
+        fprintf(stderr, "Could not start getter thread!\n");
+        return 1;
+    }
+ 
     pthread_join(thread_setter, NULL);
     pthread_join(thread_getter, NULL);
-
+    pthread_join(thread_getter2, NULL);
+	
     int_vector_multithread_destroy(store_inst);
 }
 

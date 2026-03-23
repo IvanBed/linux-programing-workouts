@@ -88,7 +88,7 @@ uint8_t vector_multithread_init(size_t capacity, size_t data_type_size, vector *
     uint8_t init_res = vector_init(capacity, data_type_size, res_vector);
     if (init_res == NO_ERR)
     {
-        if (pthread_rwlock_init(&((*res_vector)->rwlock), NULL) == -1)
+        if (pthread_rwlock_init(&((*res_vector)->rwlock), NULL) == -1 || pthread_mutex_init(&((*res_vector)->mtx, NULL) == -1)
         {
             return LOCK_INIT_ERR;
         }
@@ -107,7 +107,8 @@ uint8_t vector_multithread_destroy(vector *inst)
         return NULL_PTR_ERR;
     }
     
-    int destroy_res = pthread_rwlock_destroy(&(inst->rwlock));
+    int lock_destroy_res = pthread_rwlock_destroy(&(inst->rwlock));
+	int mtx_destroy_res  = pthread_mutex_destroy(&(inst->rwlock));
     return vector_destroy(inst);
 }
 
@@ -120,7 +121,7 @@ uint8_t add(vector *inst, char *el, size_t el_type_size)
     
     if (is_full(inst))
     {
-        size_t tries = 0;
+		size_t tries = 0;
         while (resize(inst, el_type_size) != NO_ERR && tries++ < REALLOC_TRIES) {}
     }
   
