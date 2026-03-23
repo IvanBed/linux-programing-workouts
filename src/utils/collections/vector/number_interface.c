@@ -97,8 +97,8 @@ uint8_t set_int(vector *inst, size_t index, int64_t el, uint8_t multithread_flag
     int num = el;
 
     if (!multithread_flag)
-        return set(inst, index, (char *)&num, sizeof(int64_t));
+        return set(inst, index, (char *)&num, sizeof(int64_t), (char *)&num);
     else
-        return set_multithread(inst, index, (char *)&num, sizeof(int64_t));
+        return set_multithread(inst, index, sizeof(int64_t), (char *)&num);
 }
 
