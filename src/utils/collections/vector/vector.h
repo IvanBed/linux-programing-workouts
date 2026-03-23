@@ -7,7 +7,8 @@
     #include <string.h>
 
     #include <pthread.h>
-
+    #include <sched.h>
+    
     #define REALLOC_COEFFICIENT(x) ((1024.0/(x + 128.0) + 1.0))  
     
     //ERROR_CODE
@@ -17,7 +18,10 @@
     #define NULL_PTR_ERR 3
     #define OUT_OF_BOUND_ERR 4
     #define LOCK_INIT_ERR 5
-    
+    #define MUTEX_INIT_ERR 6
+    #define COND_INIT_ERR 7
+
+
     #define NO_EL -1
     
     #define REALLOC_TRIES 10
@@ -37,12 +41,12 @@
         size_t capacity;
         pthread_rwlock_t rwlock;
         
-		uint8_t realloc_process;
-		pthread_mutex_t mtx;
+        uint8_t realloc_process;
+        pthread_mutex_t mtx;
+        pthread_cond_t cond;
+
+        uint8_t lock_init;
         
-		
-		uint8_t lock_init;
-		
     };
     
     uint8_t vector_init(size_t, size_t, vector **);

@@ -91,7 +91,7 @@ void test_double()
 void test_str()
 {
     vector *test = NULL;
-    str_vector_init(1, &test);
+    str_vector_init(15, &test);
     char *t1 = "aaa";
     char *t2 = "bbb";
     char *t3 = "ccc";
@@ -108,10 +108,23 @@ void test_str()
     {
         char *res1;
         get_string(test, i, res1);
-        printf("%s\n", res1);        
+        //printf("%s\n", res1);        
     }
     printf("size: %d\n", test->size);
+    free(t4);
     str_vector_destroy(test);
+}
+
+void *add_data(void *data)
+{
+    int64_t test = 1000;
+    vector *store_inst = (vector *)data;
+    while(1)
+    {
+        add_int(store_inst, ++test, true);
+        sleep(1);
+    }
+    return NULL;
 }
 
 void *set_data(void *data)
@@ -121,19 +134,23 @@ void *set_data(void *data)
     while(1)
     {
         set_int(store_inst, 0, ++test, true);
-        sleep(3);
+        sleep(1);
     }
     return NULL;
-
 }
 
 void *get_data(void *data)
 {
     vector *store_inst = (vector *)data;
+    int64_t prev_val = -1;
+    size_t index = 0;
     while(1)
     {
-        int64_t val = get_int(store_inst, 0, true);
+        int64_t val = get_int(store_inst, index++, true);
+        
         printf("GETTER 1 value: %d\n", val);
+        printf("GETTER 1 prev val: %d\n", prev_val);
+        prev_val = val;
         sleep(1);
     }
 
@@ -173,7 +190,7 @@ void test_multithread()
         return 1;
     }
  
-     if (pthread_create(&thread_getter2, NULL, get_data2, (void *)store_inst) != 0) { 
+    if (pthread_create(&thread_getter2, NULL, add_data, (void *)store_inst) != 0) { 
         fprintf(stderr, "Could not start getter thread!\n");
         return 1;
     }
@@ -188,7 +205,13 @@ void test_multithread()
 int main() 
 {
     test_int();
-    //test_double();
-    //test_str();
+    test_double();
+        test_int();
+    test_double();
+        test_int();
+    test_double();
+        test_int();
+    test_double();
+    test_str();
     //test_multithread();
 }

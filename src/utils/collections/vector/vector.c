@@ -23,6 +23,7 @@ static uint8_t resize(vector *inst, size_t type_size)
     
     if (new_data == NULL)
     {
+        printf("can not realloc!");
         return REALLOC_ERR;
     }
     inst->data     = new_data;
@@ -66,6 +67,7 @@ uint8_t vector_init(size_t capacity, size_t data_type_size, vector **res_vector)
     new_vector->size      = 0;
     new_vector->capacity  = capacity;
     new_vector->lock_init = false;
+    new_vector->realloc_process = false;
 
     *res_vector = new_vector;
     return NO_ERR;
@@ -88,14 +90,24 @@ uint8_t vector_multithread_init(size_t capacity, size_t data_type_size, vector *
     uint8_t init_res = vector_init(capacity, data_type_size, res_vector);
     if (init_res == NO_ERR)
     {
-        if (pthread_rwlock_init(&((*res_vector)->rwlock), NULL) == -1 || pthread_mutex_init(&((*res_vector)->mtx, NULL) == -1)
+        
+        if (pthread_rwlock_init(&((*res_vector)->rwlock), NULL) != 0)
         {
             return LOCK_INIT_ERR;
         }
-        else
+
+        if (pthread_mutex_init(&((*res_vector)->mtx), NULL) != 0)
         {
-            (*res_vector)->lock_init = true;
+            return MUTEX_INIT_ERR;
         }
+        
+        if (pthread_cond_init(&((*res_vector)->cond), NULL) != 0)
+        {
+            return COND_INIT_ERR;
+        }
+
+        (*res_vector)->lock_init = true;
+        
     }    
     return init_res;
 }
@@ -107,22 +119,27 @@ uint8_t vector_multithread_destroy(vector *inst)
         return NULL_PTR_ERR;
     }
     
-    int lock_destroy_res = pthread_rwlock_destroy(&(inst->rwlock));
-	int mtx_destroy_res  = pthread_mutex_destroy(&(inst->rwlock));
+    int lock_destroy_res  = pthread_rwlock_destroy(&(inst->rwlock));
+    int mtx_destroy_res   = pthread_mutex_destroy(&(inst->mtx));
+    int cond_destroy_res  = pthread_cond_destroy(&(inst->cond));
+
     return vector_destroy(inst);
 }
 
 uint8_t add(vector *inst, char *el, size_t el_type_size)
 {
-    if (inst == NULL)
+    if (!inst || !el)
     {
         return NULL_PTR_ERR;
     }
     
     if (is_full(inst))
     {
-		size_t tries = 0;
+        size_t tries = 0;
+        inst->realloc_process = true;
+        printf("REALLOC!\n");
         while (resize(inst, el_type_size) != NO_ERR && tries++ < REALLOC_TRIES) {}
+        inst->realloc_process = false;
     }
   
     char *insert_pos = ((inst->data) + (inst->size * el_type_size));
@@ -133,7 +150,7 @@ uint8_t add(vector *inst, char *el, size_t el_type_size)
 
 uint8_t get(vector *inst, size_t index, size_t el_type_size, char *value)
 {
-    if (inst == NULL)
+    if (!inst || !value)
     {
         return NULL_PTR_ERR;
     }
@@ -150,7 +167,7 @@ uint8_t get(vector *inst, size_t index, size_t el_type_size, char *value)
 
 uint8_t set(vector *inst, size_t index, size_t el_type_size, char *el)
 {
-    if (inst == NULL)
+    if (!inst || !el)
     {
         return NULL_PTR_ERR;
     }
@@ -167,7 +184,7 @@ uint8_t set(vector *inst, size_t index, size_t el_type_size, char *el)
 
 uint8_t add_multithread(vector *inst, char *el, size_t el_type_size)
 {
-    if (inst == NULL)
+    if (!inst || !el)
     {
         return NULL_PTR_ERR;
     }
@@ -176,17 +193,23 @@ uint8_t add_multithread(vector *inst, char *el, size_t el_type_size)
     {
         return LOCK_INIT_ERR;
     }
-    
+    pthread_rwlock_rdlock(&(inst->rwlock));
+    while(inst->realloc_process) 
+    {
+        sched_yield ();
+    }
+    pthread_rwlock_unlock(&(inst->rwlock));
+
     pthread_rwlock_wrlock(&(inst->rwlock));
     uint8_t res = add(inst, el, el_type_size);
     pthread_rwlock_unlock(&(inst->rwlock));
 
-    return NO_ERR;
+    return res;
 }
 
 uint8_t get_multithread(vector *inst, size_t index, size_t el_type_size, char *value)
 {
-    if (inst == NULL)
+    if (!inst || !value)
     {
         return NULL_PTR_ERR;
     }
@@ -195,8 +218,12 @@ uint8_t get_multithread(vector *inst, size_t index, size_t el_type_size, char *v
     {
         return LOCK_INIT_ERR;
     }
-        
+    
     pthread_rwlock_rdlock(&(inst->rwlock));
+    while(inst->realloc_process) 
+    {
+        sched_yield ();
+    } 
     uint8_t res = get(inst, index, el_type_size, value);
     pthread_rwlock_unlock(&(inst->rwlock));
     
@@ -205,7 +232,7 @@ uint8_t get_multithread(vector *inst, size_t index, size_t el_type_size, char *v
 
 uint8_t set_multithread(vector *inst, size_t index, size_t el_type_size, char *el)
 {
-    if (inst == NULL)
+    if (!inst || !el)
     {
         return NULL_PTR_ERR;
     }
@@ -214,8 +241,12 @@ uint8_t set_multithread(vector *inst, size_t index, size_t el_type_size, char *e
     {
         return LOCK_INIT_ERR;
     }
-
+    
     pthread_rwlock_wrlock(&(inst->rwlock));
+    while(inst->realloc_process) 
+    {
+        sched_yield ();
+    }
     uint8_t res = set(inst, index, el_type_size, el);
     pthread_rwlock_unlock(&(inst->rwlock));
 
