@@ -65,7 +65,7 @@ void test_int()
         printf("%d\n", get_int(test, i, false));        
     }
     printf("size: %d\n", test->size);
-    int_vector_destroy(test);
+    //int_vector_destroy(test);
 }
 
 void test_double()
@@ -85,7 +85,7 @@ void test_double()
         printf("%f\n", get_double(test, i));        
     }
     printf("size: %d\n", test->size);
-    double_vector_destroy(test);
+    //double_vector_destroy(test);
 }
 
 void test_str()
@@ -108,7 +108,7 @@ void test_str()
     {
         char *res1;
         get_string(test, i, res1);
-        //printf("%s\n", res1);        
+        //printf("%s\n", res1);
     }
     printf("size: %d\n", test->size);
     free(t4);
@@ -211,7 +211,8 @@ int main()
         test_int();
     test_double();
         test_int();
-    test_double();
+    //test_double();
+
     test_str();
     //test_multithread();
 }

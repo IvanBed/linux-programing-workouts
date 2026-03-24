@@ -4,7 +4,7 @@ RM = rm -f   # rm command
 
 LIBTARGET = libvector.so # target
 TEST      = test
-LIBPATH   = /home/ivan/Dev/linux-programing-workouts/src/utils/collections/vector
+LIBPATH   := $(shell pwd)
 
 SRC1 = number_interface.c
 OBJ1 = $(SRC1:.c=.o)

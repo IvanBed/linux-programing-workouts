@@ -20,6 +20,7 @@ uint8_t add_string(vector *inst, char *el)
 uint8_t get_string(vector *inst, size_t index, char *str_res)
 {
     size_t  ptr_size = sizeof(char **);
+    printf("size of char** %d\n", ptr_size);
     char    string_ptr_buff[ptr_size]; 
     char    *el;
     
@@ -28,9 +29,9 @@ uint8_t get_string(vector *inst, size_t index, char *str_res)
     {
         return NO_EL;
     }
-    
     el = *((char**)string_ptr_buff); 
-    memcpy(str_res, el, ptr_size);   
-    //puts(el);
+    str_res = el;
+    //memcpy(str_res, el, sizeof(char*));   
+    puts(el);
     //return el;
 }

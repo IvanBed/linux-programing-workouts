@@ -150,18 +150,26 @@ uint8_t add(vector *inst, char *el, size_t el_type_size)
 
 uint8_t get(vector *inst, size_t index, size_t el_type_size, char *value)
 {
-    if (!inst || !value)
+    //puts("get!!!");
+    //printf("ll type size %d\n", el_type_size);
+    if (!inst)
     {
         return NULL_PTR_ERR;
     }
-    
+    //puts("get1!!!");
     if (is_out_range(inst, index))
     {
         return OUT_OF_BOUND_ERR;
     }
-    
+    //puts("get2!!!");
+    //printf("index %d\n", index);
     char *val_pos = ((inst->data) + (index * el_type_size));
-    memcpy(value, val_pos, el_type_size); 
+    //if (val_pos == NULL) puts("val pos null");
+    //puts(val_pos);
+    //puts("get3!!!");
+    //memcpy(value, val_pos, el_type_size);
+    insert(value, val_pos, el_type_size);
+    //puts("get4!!");
     return NO_ERR;
 }
 
