@@ -64,7 +64,8 @@ char const *make_absolute_path(char const *current_dir_name, char const *prev_pa
         return NULL;
     }
     strcpy(absolute_path, prev_path);
-    strcat(absolute_path, "/");
+    if (prev_path[prev_path_len - 1] != '/')
+        strcat(absolute_path, "/");
     strcat(absolute_path, current_dir_name);
 
     return absolute_path;
