@@ -16,12 +16,12 @@
 #define NEW_LINE_CHARS_CNT 8
 #define NEW_LINE "\r\n\r\n"
 
-#define PROTOCOL_STR " HTTP/1.1\r\n"
+#define PROTOCOL_STR "HTTP/1.1\r\n"
 #define HOST_STR "Host: "
-#define GET_METHOD_STR "GET "
+#define GET_METHOD_STR "GET /"
 #define CONN_TYPE_STR "\r\nConnection: close\r\n\r\n"
 
-#define POST_METHOD_STR "POST "
+#define POST_METHOD_STR "POST /"
 #define CONTENT_TYPE_TEXT_STR "\r\nContent-Type: text/html; charset=utf-8\r\n"
 #define CONTETN_LEN_STR "Content-Length: "
 
@@ -171,6 +171,7 @@ static int parseURL(struct Node **list, char *URLstr)
     char str_buff[2048];
     size_t buff_ptr = 0;
     size_t url_len = strlen(URLstr);
+    puts("parseURL");
     memset(str_buff, 0, 2048 * sizeof(char));
     for (size_t i = 0; i < url_len && buff_ptr < 2047; i++) 
     {
@@ -181,6 +182,7 @@ static int parseURL(struct Node **list, char *URLstr)
                 str_buff[buff_ptr++] = URLstr[i];
 
             str_buff[++buff_ptr] = '\0';
+            puts(str_buff);
             int res_of_add = add(list, str_buff);
             memset(str_buff, 0, buff_ptr * sizeof(char));
             buff_ptr = 0;
@@ -204,8 +206,8 @@ static int make_domain_name(struct Node* list, char ** domain_name)
     struct Node* domain_name_node = get_node(list, 2);
     if (domain_name_node == NULL)
         return 1;
-    
-    * domain_name = domain_name_node->str_val;
+    puts(domain_name_node->str_val);
+    *domain_name = domain_name_node->str_val;
     return 0;
 }
 
@@ -253,7 +255,7 @@ uint8_t make_get_request(char const *domain_name, char const *resourсe_url, cha
     }
     
     size_t total_len =  strlen(domain_name) + strlen(resourсe_url) + strlen(PROTOCOL_STR) + strlen(CONN_TYPE_STR) + strlen(HOST_STR) 
-    + strlen(POST_METHOD_STR);
+    + strlen(GET_METHOD_STR);
 
     char *buff = (char*) malloc(total_len + 1);
     if (!buff)
@@ -261,7 +263,7 @@ uint8_t make_get_request(char const *domain_name, char const *resourсe_url, cha
         return ALLOC_ERR;
     }
 
-    strcpy(buff, POST_METHOD_STR);
+    strcpy(buff, GET_METHOD_STR);
  
     strcat(buff, resourсe_url);
     strcat(buff, PROTOCOL_STR);
@@ -413,7 +415,7 @@ uint8_t get_response(int sockfd)
 {
     size_t len = BUF_SIZE * 8;
     char buff[len];
-    
+    puts("response");
     size_t count;
     while ((count = recv(sockfd, (void*) buff, len, 0)) != 0) 
     {
@@ -430,6 +432,7 @@ uint8_t get_response(int sockfd)
             }
         }
     }
+
     return NO_ERR;
 }
 
@@ -439,63 +442,64 @@ int main(int argc, char **argv) {
     char *URL               = NULL;
     char *body              = NULL;
     enum request_method_type method_type;
-
+     puts("test000000");
     if (argc < 3) 
     {
-        printf("");
+        printf("NO_ARGS_ERR");
         return NO_ARGS_ERR;
     }
     else
     {
         char *URL = argv[2];
-        if (argv[1] == "GET")
+        puts(URL);
+        if (strcmp(argv[1], "GET") == 0)
             method_type = GET;
         else 
         {
             method_type = POST;
             if (argc < 4) 
-                return POST_ARGS_ERR;
+                puts("POST_ARGS_ERR");
             else
                 body = argv[3];
         }     
     }
-    
+    puts("test000");
     struct Node *list       = NULL;
     int sockfd              = 0;
     struct addrinfo *result = NULL;
     char *msg               = NULL;
-
-    int err = parseURL(&list, URL);
+    puts("test0");
+    int err = parseURL(&list, argv[2]);
     if (err != 0) {
         fprintf(stderr, "Problem with parsing URL.\n");
         return 1;
     }
-    
+    puts("test1");
     if (!check_protocol(list))
     {
         return 1;
     }
-
+     puts("test2");
     char *domain_name = NULL;
     err = make_domain_name(list, &domain_name);
     if (err != 0) {
         fprintf(stderr, "Can not make resoutce url string.\n");
         return 1;
     }   
-    
-    char* resourсe_url = NULL;
+    puts("test3");
+    char* resourсe_url = " ";
     err = make_resourсe_url(list, &resourсe_url, 3, 10);
     if (err != 0) {
         fprintf(stderr, "Can not make resoutce url string.\n");
-        return 1;
+        //return 1;
     }
-    
+    puts("test4");
     err = get_ip_from_domain(domain_name, "80", &result);
     if (err != 0) {
         fprintf(stderr, "Can not resolve the domain name.\n");
         return 1;
     }
-
+    puts("test5");
     err = try_connect(result, &sockfd);
     if (err != 0) {
         fprintf(stderr, "Can not connect to the host.\n");
@@ -503,22 +507,28 @@ int main(int argc, char **argv) {
     }
     freeaddrinfo(result);
     
+    puts(domain_name);
+    puts(resourсe_url);
+    //puts(msg);
+
     switch(method_type)
     {
         case GET:
             err = make_get_request(domain_name, resourсe_url, &msg);
             break;
         case POST:
-            err = make_post_request(domain_name, resourсe_url, &msg);
+            err = make_post_request(domain_name, resourсe_url, argv[3], &msg);
             break;  
         default:
             err = -1;
     }
- 
+    puts(msg);
     if (err != 0) {
         fprintf(stderr, "Can not generate msg.\n");
         return 1;
     }
+
+    get_response(sockfd);
 
     if(resourсe_url)
         free(resourсe_url);

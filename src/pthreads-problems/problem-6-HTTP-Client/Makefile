@@ -2,5 +2,7 @@
 client: 
 	gcc HTTPClient.c -o client
 
-clear:
+clean:
 	-rm *.o
+clean-all: clean
+	-rm client
