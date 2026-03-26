@@ -65,7 +65,7 @@ void test_int()
         printf("%d\n", get_int(test, i, false));        
     }
     printf("size: %d\n", test->size);
-    //int_vector_destroy(test);
+    int_vector_destroy(test);
 }
 
 void test_double()
@@ -85,7 +85,7 @@ void test_double()
         printf("%f\n", get_double(test, i));        
     }
     printf("size: %d\n", test->size);
-    //double_vector_destroy(test);
+    double_vector_destroy(test);
 }
 
 void test_str()
@@ -113,6 +113,7 @@ void test_str()
     printf("size: %d\n", test->size);
     free(t4);
     str_vector_destroy(test);
+   
 }
 
 void *add_data(void *data)
@@ -170,12 +171,29 @@ void *get_data2(void *data)
     return NULL;
 }
 
+void *print_all(void *data)
+{
+    vector *store_inst = (vector *)data;
+    while(1)
+    {
+        sleep(1);
+        for (size_t i = 0; i < store_inst->size; i++)
+        {
+            int64_t val = get_int(store_inst, i, true);
+            printf("%d ", val);
+        }
+        printf("\n");   
+    }
+
+    return NULL;
+}
+
 void test_multithread()
 {
     vector *store_inst = NULL;
     int_vector_multithread_init(5, &store_inst);
     
-    pthread_t thread_setter, thread_getter, thread_getter2;
+    pthread_t thread_setter, thread_getter, thread_adder, thread_print_all;
 
     add_int(store_inst, 1, false);
     add_int(store_inst, 2, false);
@@ -190,15 +208,20 @@ void test_multithread()
         return 1;
     }
  
-    if (pthread_create(&thread_getter2, NULL, add_data, (void *)store_inst) != 0) { 
+    if (pthread_create(&thread_adder, NULL, add_data, (void *)store_inst) != 0) { 
         fprintf(stderr, "Could not start getter thread!\n");
         return 1;
     }
  
+    if (pthread_create(&thread_print_all, NULL, print_all, (void *)store_inst) != 0) { 
+        fprintf(stderr, "Could not start thread_print_all!\n");
+        return 1;
+    }
     pthread_join(thread_setter, NULL);
     pthread_join(thread_getter, NULL);
-    pthread_join(thread_getter2, NULL);
-	
+    pthread_join(thread_adder, NULL);
+	pthread_join(thread_print_all, NULL);
+
     int_vector_multithread_destroy(store_inst);
 }
 
@@ -206,13 +229,15 @@ int main()
 {
     test_int();
     test_double();
-        test_int();
+    test_int();
     test_double();
-        test_int();
+    test_int();
     test_double();
-        test_int();
+    test_int();
     //test_double();
 
-    test_str();
+    //test_str();
+    //test_str();
+    //test_str();
     //test_multithread();
 }

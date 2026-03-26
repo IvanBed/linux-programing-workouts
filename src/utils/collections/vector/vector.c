@@ -150,26 +150,23 @@ uint8_t add(vector *inst, char *el, size_t el_type_size)
 
 uint8_t get(vector *inst, size_t index, size_t el_type_size, char *value)
 {
-    //puts("get!!!");
-    //printf("ll type size %d\n", el_type_size);
     if (!inst)
     {
         return NULL_PTR_ERR;
     }
-    //puts("get1!!!");
+
+    if (inst->size == 0)
+    {
+        return ZERO_SIZE_VECTOR;
+    }
+
     if (is_out_range(inst, index))
     {
         return OUT_OF_BOUND_ERR;
     }
-    //puts("get2!!!");
-    //printf("index %d\n", index);
+
     char *val_pos = ((inst->data) + (index * el_type_size));
-    //if (val_pos == NULL) puts("val pos null");
-    //puts(val_pos);
-    //puts("get3!!!");
-    //memcpy(value, val_pos, el_type_size);
-    insert(value, val_pos, el_type_size);
-    //puts("get4!!");
+    memcpy(value, val_pos, el_type_size);
     return NO_ERR;
 }
 
@@ -190,6 +187,41 @@ uint8_t set(vector *inst, size_t index, size_t el_type_size, char *el)
     return NO_ERR;
 }
 
+uint8_t top(vector *inst, size_t el_type_size, char *value)
+{
+    if (!inst)
+    {
+        return NULL_PTR_ERR;
+    }
+
+    if (inst->size == 0)
+    {
+        return ZERO_SIZE_VECTOR;
+    }
+
+    return get(inst, inst->size - 1, el_type_size, value);
+}
+
+uint8_t pop(vector *inst, size_t el_type_size, char *value)
+{
+    if (!inst)
+    {
+        return NULL_PTR_ERR;
+    }
+
+    if (inst->size == 0)
+    {
+        return ZERO_SIZE_VECTOR;
+    } 
+
+    uint8_t res = top(inst, el_type_size, value);
+    if (res == NO_ERR)
+    {
+        inst->size -= 1;
+    }
+    return res;
+}
+
 uint8_t add_multithread(vector *inst, char *el, size_t el_type_size)
 {
     if (!inst || !el)
@@ -204,7 +236,7 @@ uint8_t add_multithread(vector *inst, char *el, size_t el_type_size)
     pthread_rwlock_rdlock(&(inst->rwlock));
     while(inst->realloc_process) 
     {
-        sched_yield ();
+        sched_yield();
     }
     pthread_rwlock_unlock(&(inst->rwlock));
 
@@ -230,7 +262,7 @@ uint8_t get_multithread(vector *inst, size_t index, size_t el_type_size, char *v
     pthread_rwlock_rdlock(&(inst->rwlock));
     while(inst->realloc_process) 
     {
-        sched_yield ();
+        sched_yield();
     } 
     uint8_t res = get(inst, index, el_type_size, value);
     pthread_rwlock_unlock(&(inst->rwlock));
@@ -253,7 +285,7 @@ uint8_t set_multithread(vector *inst, size_t index, size_t el_type_size, char *e
     pthread_rwlock_wrlock(&(inst->rwlock));
     while(inst->realloc_process) 
     {
-        sched_yield ();
+        sched_yield();
     }
     uint8_t res = set(inst, index, el_type_size, el);
     pthread_rwlock_unlock(&(inst->rwlock));

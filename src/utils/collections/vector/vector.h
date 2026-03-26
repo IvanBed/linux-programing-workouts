@@ -20,7 +20,7 @@
     #define LOCK_INIT_ERR 5
     #define MUTEX_INIT_ERR 6
     #define COND_INIT_ERR 7
-
+    #define ZERO_SIZE_VECTOR 8
 
     #define NO_EL -1
     
