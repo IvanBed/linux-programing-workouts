@@ -1,4 +1,4 @@
-#include "number_interface.h"
+#include "string_interface.h"
 
 uint8_t str_vector_init(size_t capacity, vector **res_vector)
 {
@@ -8,13 +8,35 @@ uint8_t str_vector_init(size_t capacity, vector **res_vector)
 
 uint8_t str_vector_destroy(vector *inst)
 {  
+    if (inst == NULL)
+    {
+        return NULL_PTR_ERR;
+    }
+
+    for (size_t i = 0; i < inst->size; i++)
+    {
+        char *str_ptr;
+        get_string(inst, i, str_ptr);
+        free(str_ptr);
+    }
     return vector_destroy(inst);
+}
+
+static char const * copy_str(char *str)
+{
+    size_t str_len = strlen(str);
+
+    char * new_str = (char *)malloc(str_len + 1);
+    memcpy(new_str, str, str_len);
+    new_str[str_len] = '\0';
+    return new_str;
 }
 
 uint8_t add_string(vector *inst, char *el)
 {
-    size_t  ptr_size = sizeof(char **);
-    return add(inst, (char **)&el, ptr_size);
+    size_t  ptr_size  = sizeof(char **);
+    char * stored_str = copy_str(el);
+    return add(inst, (char **)&stored_str, ptr_size);
 }
 
 uint8_t get_string(vector *inst, size_t index, char *str_res)

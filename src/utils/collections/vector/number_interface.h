@@ -12,9 +12,13 @@
     uint8_t double_vector_destroy(vector *);
 
     uint8_t add_int(vector *, int64_t, uint8_t);
-    uint8_t add_double(vector *, double);
     int64_t get_int(vector *, size_t, uint8_t);
-    double  get_double(vector *, size_t);
     uint8_t set_int(vector *, size_t, int64_t, uint8_t);
+    
+    uint8_t top_int(vector *, uint8_t);
+    uint8_t pop_int(vector *, uint8_t);
+
+    uint8_t add_double(vector *, double);
+    double  get_double(vector *, size_t);
 
 #endif

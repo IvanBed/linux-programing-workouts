@@ -126,6 +126,38 @@ uint8_t vector_multithread_destroy(vector *inst)
     return vector_destroy(inst);
 }
 
+uint8_t clear(vector *inst, size_t el_type_size)
+{
+    if (!inst)
+    {
+        return NULL_PTR_ERR;
+    }
+    memset(inst, 0, inst->size * el_type_size);
+    inst->size = 0;
+    
+    return NO_ERR;
+}
+
+//Опасная функция, с точки зрения многопоточности
+uint8_t clear_multithread(vector *inst, size_t el_type_size)
+{
+    if (!inst)
+    {
+        return NULL_PTR_ERR;
+    }
+
+    pthread_rwlock_rdlock(&(inst->rwlock));
+    while(inst->realloc_process) 
+    {
+        sched_yield();
+    }
+    pthread_rwlock_unlock(&(inst->rwlock));
+
+    pthread_rwlock_wrlock(&(inst->rwlock));
+    uint8_t res = clear(inst, el_type_size);
+    pthread_rwlock_unlock(&(inst->rwlock));
+}
+
 uint8_t add(vector *inst, char *el, size_t el_type_size)
 {
     if (!inst || !el)
@@ -290,5 +322,40 @@ uint8_t set_multithread(vector *inst, size_t index, size_t el_type_size, char *e
     uint8_t res = set(inst, index, el_type_size, el);
     pthread_rwlock_unlock(&(inst->rwlock));
 
+    return res;
+}
+
+uint8_t top_multithread(vector *inst, size_t el_type_size, char *value)
+{
+    if (!inst)
+    {
+        return NULL_PTR_ERR;
+    }
+
+    if (inst->size == 0)
+    {
+        return ZERO_SIZE_VECTOR;
+    }
+
+    return get_multithread(inst, inst->size - 1, el_type_size, value);
+}
+
+uint8_t pop_multithread(vector *inst, size_t el_type_size, char *value)
+{
+    if (!inst)
+    {
+        return NULL_PTR_ERR;
+    }
+
+    if (inst->size == 0)
+    {
+        return ZERO_SIZE_VECTOR;
+    } 
+
+    uint8_t res = top_multithread(inst, el_type_size, value);
+    if (res == NO_ERR)
+    {
+        inst->size -= 1;
+    }
     return res;
 }

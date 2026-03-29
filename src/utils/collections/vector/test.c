@@ -227,17 +227,17 @@ void test_multithread()
 
 int main() 
 {
-    test_int();
+    /*test_int();
     test_double();
     test_int();
     test_double();
     test_int();
     test_double();
-    test_int();
+    test_int();*/
     //test_double();
 
-    //test_str();
-    //test_str();
-    //test_str();
+    test_str();
+    test_str();
+    test_str();
     //test_multithread();
 }

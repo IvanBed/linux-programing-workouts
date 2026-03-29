@@ -59,8 +59,15 @@
     uint8_t get(vector *, size_t, size_t, char *);
     uint8_t set(vector *, size_t, size_t, char *);
 
+    uint8_t top(vector *, size_t, char *);
+    uint8_t pop(vector *, size_t, char *);
+
+
     uint8_t add_multithread(vector *, char *, size_t );
     uint8_t get_multithread(vector *, size_t, size_t, char *);
     uint8_t set_multithread(vector *, size_t, size_t, char *);
+
+    uint8_t top_multithread(vector *, size_t, char *);
+    uint8_t pop_multithread(vector *, size_t, char *);
     
 #endif
