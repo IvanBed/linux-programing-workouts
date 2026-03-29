@@ -52,8 +52,6 @@ uint8_t get_string(vector *inst, size_t index, char *str_res)
         return NO_EL;
     }
     el = *((char**)string_ptr_buff); 
-    str_res = el;
-    //memcpy(str_res, el, sizeof(char*));   
-    puts(el);
-    //return el;
+    str_res = el;  
+    return NO_ERR;
 }
