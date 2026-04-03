@@ -68,12 +68,6 @@ static std::vector<std::string> encoded_words(std::string const & line, char sep
 	}
 	
 	size_t second_del_pos = line.find(separator, first_del_pos + 1);
-
-	if (first_del_pos == std::string::npos)
-	{
-	    res[2] = line;
-	    return res;
-	}
 	
 	res[0] = line.substr(0, first_del_pos);
 	res[1] = line.substr(first_del_pos + 1, second_del_pos - (first_del_pos + 1));
