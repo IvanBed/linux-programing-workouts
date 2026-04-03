@@ -57,7 +57,6 @@ static std::vector<std::string> split_line(std::string const & line, char separa
 static std::vector<std::string> encoded_words(std::string const & line, char separator)
 {
     std::vector<std::string> res(3, "");
-    std::string val = "";
     
 	size_t first_del_pos = line.find(separator);
     
