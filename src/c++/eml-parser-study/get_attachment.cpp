@@ -5,7 +5,10 @@
 #include <regex>
 #include <cctype>
 #include <iomanip>
+#include <cerrno>
+
 #include "base64.hpp"
+#include "base16.hpp"
 
 #define BOUNDARY_PATTERN " boundary=\"*"
 #define FILENAME_PATTERN "filename*"
@@ -22,9 +25,16 @@
 #define RFC2047     "=\?([^?]+)\?([QBqb])\?([^?]+)\?="
 #define RFC2231     ""
 
-#define UNKOWN_ENCODE  0
-#define RFC2047_ENCODE 1
-#define RFC2231_ENCODE 2
+// TO DO Добавить charset, добавить еще один тип encoding в стандарте vmime, а так же сбор информации по кодировкам, реализовать heder
+
+enum encode
+{
+    UNKOWN_ENCODE = 0,
+    RFC2047_ENCODE,
+    RFC2231_ENCODE
+};
+
+typedef enum encode encode_result; 
 
 void to_utf8(std::string &str)
 {
@@ -57,30 +67,31 @@ static std::vector<std::string> split_line(std::string const & line, char separa
 static std::vector<std::string> encoded_words(std::string const & line, char separator)
 {
     std::vector<std::string> res(3, "");
+    std::string val = "";
     
-	size_t first_del_pos = line.find(separator);
+    size_t first_del_pos = line.find(separator);
     
-	if (first_del_pos == std::string::npos)
-	{
-	    res[2] = line;
-	    return res;
-	}
-	
-	size_t second_del_pos = line.find(separator, first_del_pos + 1);
-	
-	res[0] = line.substr(0, first_del_pos);
-	res[1] = line.substr(first_del_pos + 1, second_del_pos - (first_del_pos + 1));
-	res[2] = line.substr(second_del_pos + 1);
-	
+    if (first_del_pos == std::string::npos)
+    {
+        res[2] = line;
+        return res;
+    }
+    
+    size_t second_del_pos = line.find(separator, first_del_pos + 1);
+
+    res[0] = line.substr(0, first_del_pos);
+    res[1] = line.substr(first_del_pos + 1, second_del_pos - (first_del_pos + 1));
+    res[2] = line.substr(second_del_pos + 1);
+    
     return res;
 }
 
 static std::string get_decoded_text_rfc2047(std::string & token)
 {
-	// Удаление обрамляющих =? для удобства разбиения
-	std::string prepared_token = token.substr(2, token.size() - 4);
-	
-	std::string decoded_text = "";
+    // Удаление обрамляющих =? для удобства разбиения
+    std::string prepared_token = token.substr(2, token.size() - 4);
+    
+    std::string decoded_text = "";
     std::vector<std::string> sub_tokens = encoded_words(prepared_token, '?');
     
     std::string charset      = sub_tokens[0];
@@ -104,12 +115,12 @@ static std::string get_decoded_text_rfc2047(std::string & token)
             decoded_text = "";
         }
     }
-	// Реализовать энкодинг Quoted-Printable
+    // Реализовать энкодинг Quoted-Printable
     else if (encoding == "Q")
     {
         decoded_text = encodedtext;
     }
-	
+    
     return decoded_text;
 }
 
@@ -123,7 +134,7 @@ static std::string parse_rfc2047(std::string & str)
     for (auto & token : tokens)
     {
         if (regex_search(token, rfc2027))
-        {
+        {    
             filename += get_decoded_text_rfc2047(token);
         }
     }
@@ -154,7 +165,7 @@ static std::string url_decode(std::string const &str)
 
 static std::string get_decoded_text_rfc2231(std::string & token)
 {
-	std::string decoded_text = "";
+    std::string decoded_text = "";
     std::vector<std::string> sub_tokens = encoded_words(token, '\'');
 
     std::string charset     = sub_tokens[0];
@@ -165,7 +176,7 @@ static std::string get_decoded_text_rfc2231(std::string & token)
         to_utf8(encodedtext);
     }
     
-	decoded_text = url_decode(encodedtext);
+    decoded_text = url_decode(encodedtext);
 
     return decoded_text;
 }
@@ -174,11 +185,11 @@ static std::string parse_rfc2231(std::string & str)
 {
     std::string filename = "";
 
-	filename = get_decoded_text_rfc2231(str);
+    filename = get_decoded_text_rfc2231(str);
     return filename;
 }
 
-static uint8_t check_encoding(std::string const & str)
+static encode_result check_encoding(std::string const & str)
 {
     std::regex hint2047(RFC2047HINT);
     std::regex hint2231(RFC2231HINT);
@@ -186,11 +197,11 @@ static uint8_t check_encoding(std::string const & str)
     {
         return RFC2047_ENCODE;
     }
-	if (regex_search(str, hint2231))
+    if (regex_search(str, hint2231))
     {
         return RFC2231_ENCODE;
     }
-	
+    
     return UNKOWN_ENCODE;
 }
 
@@ -243,9 +254,10 @@ static bool save_str_to_file(std::string const & out_filename, std::string const
 {
     std::ofstream out;
     out.open(out_filename, std::ios::binary);
-    if (!out.is_open()) {
-        std::cerr << "Error: Unable to open file!" << std::endl;
-        return 1;
+    if (!out.is_open()) 
+    {
+        std::cerr << "Error: Unable to open file! Error number: " << std::strerror(errno) << std::endl;
+        return false;
     }
     else
     {
@@ -300,14 +312,20 @@ int main(int argc, char *argv[])
     {
         eml_filename = std::string(argv[1]);
     }
-	else
-	{
-		std::cout << ""
-		return 1;
-	}
+    else
+    {
+        std::cerr << "Enter the path to the file" << std::endl;
+        return 1;
+    }
 
     std::ifstream eml_file(eml_filename);
 
+    if (!eml_file.is_open()) 
+    {
+        std::cerr << "Error: Unable to open EML file! Check the file and try again!\n Error number: " << std::strerror(errno) << std::endl;
+        return 1;
+    }
+    
     std::string line;
 
     std::regex bound_pattern(BOUNDARY_PATTERN);
@@ -331,8 +349,8 @@ int main(int argc, char *argv[])
     {
         remove_carriage_return_if_needed(line);
         
-		// Аккумуляция имени файла вложения на случай если значение этого имени располагается на нескольких строчках eml файла
-		// Условия, если запущен процесс аккумуляции имени файла, текующая строка не пустая и не является токеном хедера или началом вложения
+        // Аккумуляция имени файла вложения на случай если значение этого имени располагается на нескольких строчках eml файла
+        // Условия, если запущен процесс аккумуляции имени файла, текующая строка не пустая и не является токеном хедера или началом вложения
         if (!empty_line(line) && filename_parsing_starts && !header_key(line) && !attach_body_start_found)
         {
             cur_filename += line;
@@ -340,13 +358,13 @@ int main(int argc, char *argv[])
         else if (filename_parsing_starts && (empty_line(line)  || header_key(line) || attach_body_start_found))
         {
             std::string filename = get_filename_val(cur_filename);
-			
-			filename_tokens.push_back(filename);
+            
+            filename_tokens.push_back(filename);
             filename_parsing_starts = false;
             cur_filename = "";
         }
         
-		// Запуск аккумуляции имени файла
+        // Запуск аккумуляции имени файла
         if (regex_search(line, filename_pattern))
         {
             if (!filename_parsing_starts)
@@ -356,8 +374,8 @@ int main(int argc, char *argv[])
                 filename_parsing_starts = true;    
             }
         }
-		
-		// Сохранение актуального значения границы
+        
+        // Сохранение актуального значения границы
         if (regex_search(line, bound_pattern))
         {
              std::string temp_boundary =  "--" + get_boundary_val(line);
@@ -389,25 +407,27 @@ int main(int argc, char *argv[])
                 }
 
                 //Из токенов файлов собираем название файла и декодируем его в зависимости от кодировки
-				attach_filename = get_attach_filename(filename_tokens);
+                attach_filename = get_attach_filename(filename_tokens);
+                std::cout << "attachment filename before encode: "<< attach_filename << "\n";
+                switch(check_encoding(attach_filename))
+                {
+                    case RFC2047_ENCODE: 
+                        attach_filename = parse_rfc2047(attach_filename);
+                        break;
+                    
+                    case RFC2231_ENCODE:
+                        attach_filename = parse_rfc2231(attach_filename);
+                        break;
+                    default:
+                        break;
+                }
+
+                if (!save_str_to_file(attach_filename, decoded_attachment_data))
+                    std::cout << "Could not save the attachment!\n";
+                else 
+                    std::cout << attach_filename << std::endl;
                 
-				switch(check_encoding(attach_filename))
-				{
-					case RFC2047_ENCODE: 
-						attach_filename = parse_rfc2047(attach_filename);
-						break;
-					
-					case RFC2231_ENCODE:
-						attach_filename = parse_rfc2231(attach_filename);
-						break;
-					default:
-						break;
-				}
-
-				save_str_to_file(attach_filename, decoded_attachment_data);
-                attachment_data = "";
-
-                std::cout << attach_filename << std::endl;
+                attachment_data = "";   
                 filename_tokens.clear();
             }
             else
