@@ -56,7 +56,7 @@ static int get_decimal_digit_from_hex_char(char hex_char)
     if (!is_hex_char(hex_char))
         return -1;
     
-    switch(num)
+    switch(hex_char)
     {    
         case '1':
             return 1;
@@ -95,7 +95,7 @@ static int get_decimal_digit_from_hex_char(char hex_char)
 
 std::string decimal_to_hex(int64_t num)
 {
-    str::string hex_num = "";
+    std::string hex_num = "";
     return hex_num;
 }
 
