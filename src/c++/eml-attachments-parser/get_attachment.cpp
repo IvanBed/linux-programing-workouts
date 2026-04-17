@@ -1,40 +1,49 @@
-#include <iostream>
-#include <fstream>
-#include <sstream> 
-#include <string>
-#include <regex>
-#include <cctype>
-#include <iomanip>
-#include <cerrno>
+#include "get_attachments.hpp"
 
-#include "base64.hpp"
-#include "base16.hpp"
+// TO DO 
+// Добавить:
+// Проверку charset
+// Сбор информации по кодировкам
+// Предкомпиляцию регулярных выражений
 
-#define BOUNDARY_PATTERN " boundary=\"*"
-#define FILENAME_PATTERN "filename*"
-// Header keys
-#define ATTACH_PATTERN   "Content-Disposition: attachment*"
-#define ENCODING_PATTERN "Content-Transfer-Encoding:*"
-#define ID_PATTERN "Content-ID:*"
-#define TYPE_PATTERN "Content-Type:*"
-#define DESCRIPTION_PATTERN "Content-Description:*"
-
-#define RFC2047HINT "=\?.*\?="
-#define RFC2231HINT ".*'.*'.*"
-
-#define RFC2047     "=\?([^?]+)\?([QBqb])\?([^?]+)\?="
-#define RFC2231     ""
-
-// TO DO Добавить charset, добавить еще один тип encoding в стандарте vmime, а так же сбор информации по кодировкам
-
-enum encode
+struct RegexPatterns
 {
-    UNKOWN_ENCODE = 0,
-    RFC2047_ENCODE,
-    RFC2231_ENCODE
+    std::regex *id_pattern;
+    std::regex *attach_pattern;
+    std::regex *encoding_pattern;
+    std::regex *description_pattern;
+    std::regex *type_pattern;
+    std::regex *filename_pattern;
+    
+    std::regex *hint2047;
+    std::regex *hint2231;
+    
+    explicit RegexPatterns()
+    {
+        *id_pattern           = new std::regex(ID_PATTERN);
+        *attach_pattern       = new std::regex(ATTACH_PATTERN);
+        *encoding_pattern;    = new std::regex(ENCODING_PATTERN);
+        *description_pattern  = new std::regex(DESCRIPTION_PATTERN);
+        *type_pattern         = new std::regex(TYPE_PATTERN);
+        *filename_pattern     = new std::regex(FILENAME_PATTERN);
+        
+        *hint2047             = new std::regex(RFC2047HINT);
+        *hint2231             = new std::regex(RFC2231HINT);        
+    }
+    
+    ~RegexPatterns()
+    {
+        delete(id_pattern);
+        delete(attach_pattern);
+        delete(encoding_pattern);
+        delete(description_pattern);
+        delete(type_pattern);
+        delete(filename_pattern);
+        
+        delete(hint2047);
+        delete(hint2231);
+    }
 };
-
-typedef enum encode encode_result; 
 
 void to_utf8(std::string &str)
 {
@@ -284,17 +293,17 @@ static void remove_carriage_return_if_needed(std::string & str)
         str.erase(str.size() - 1);
 }
 
-static bool header_key(std::string & line)
+static bool header_key(std::string const & line, RegexPatterns const & patterns)
 {
-    std::regex id_pattern(ID_PATTERN);
+    /*std::regex id_pattern(ID_PATTERN);
     std::regex attach_pattern(ATTACH_PATTERN);
     std::regex encoding_pattern(ENCODING_PATTERN);
     std::regex description_pattern(DESCRIPTION_PATTERN);
     std::regex type_pattern(TYPE_PATTERN);
-    std::regex filename_pattern(FILENAME_PATTERN);
+    std::regex filename_pattern(FILENAME_PATTERN);*/
     
-    if (regex_search(line, id_pattern) || regex_search(line, attach_pattern) || regex_search(line, encoding_pattern) 
-        || regex_search(line, description_pattern) || regex_search(line, type_pattern) || regex_search(line, filename_pattern))
+    if (regex_search(line, *(patterns.id_pattern)) || regex_search(line, *(patterns.attach_pattern)) || regex_search(line, *(patterns.encoding_pattern)) 
+        || regex_search(line, *(patterns.description_pattern)) || regex_search(line, *(patterns.type_pattern)) || regex_search(line, *(patterns.filename_pattern)))
     {
         return true;
     }
@@ -332,6 +341,8 @@ int main(int argc, char *argv[])
     std::regex attach_pattern(ATTACH_PATTERN);
     std::regex filename_pattern(FILENAME_PATTERN);
 
+    RegexPatterns patterns();
+
     std::string attach_filename = "";
 
     bool attach_found            = false;
@@ -351,11 +362,11 @@ int main(int argc, char *argv[])
         
         // Аккумуляция имени файла вложения на случай если значение этого имени располагается на нескольких строчках eml файла
         // Условия, если запущен процесс аккумуляции имени файла, текующая строка не пустая и не является токеном хедера или началом вложения
-        if (!empty_line(line) && filename_parsing_starts && !header_key(line) && !attach_body_start_found)
+        if (!empty_line(line) && filename_parsing_starts && !header_key(line, patterns) && !attach_body_start_found)
         {
             cur_filename += line;
         }
-        else if (filename_parsing_starts && (empty_line(line)  || header_key(line) || attach_body_start_found))
+        else if (filename_parsing_starts && (empty_line(line)  || header_key(line, patterns) || attach_body_start_found))
         {
             std::string filename = get_filename_val(cur_filename);
             
