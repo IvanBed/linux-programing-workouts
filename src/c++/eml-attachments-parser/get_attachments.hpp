@@ -13,15 +13,22 @@
     #include "base64.hpp"
     #include "base16.hpp"
 
-    #define BOUNDARY_PATTERN " boundary=\"*"
-    #define FILENAME_PATTERN "filename*"
+    #define BOUNDARY_PATTERN "boundary=\"*"
+
     // Header keys
     #define ATTACH_PATTERN   "Content-Disposition: attachment*"
-    #define ENCODING_PATTERN "Content-Transfer-Encoding:*"
+	// Content-Disposition params
+	#define FILENAME_PATTERN "filename*"
+	#define FILESIZE_PATTERN "size=*"
+	
+	#define FILECD_PATTERN "creation-date=*"
+	#define FILEMD_PATTERN "modification-date=*"
+	#define FILERD_PATTERN "read-date=*"
+	
+	#define ENCODING_PATTERN "Content-Transfer-Encoding:*"
     #define ID_PATTERN "Content-ID:*"
     #define TYPE_PATTERN "Content-Type:*"
     #define DESCRIPTION_PATTERN "Content-Description:*"
-
     #define RFC2047HINT "=\?.*\?="
     #define RFC2231HINT ".*'.*'.*"
 

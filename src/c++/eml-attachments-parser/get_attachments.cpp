@@ -4,42 +4,60 @@
 // Добавить:
 // Проверку charset
 // Сбор информации по кодировкам
-// Предкомпиляцию регулярных выражений
+// Предкомпиляцию регулярных выражений Done
 
 struct RegexPatterns
 {
     std::regex *id_pattern;
-    std::regex *attach_pattern;
     std::regex *encoding_pattern;
     std::regex *description_pattern;
     std::regex *type_pattern;
+	
+	std::regex *attach_pattern;
     std::regex *filename_pattern;
-    
+    std::regex *filesize_pattern;
+	
+	std::regex *filecd_pattern;
+	std::regex *filemd_pattern;
+	std::regex *filerd_pattern;
+	
     std::regex *hint2047;
     std::regex *hint2231;
     
     explicit RegexPatterns()
     {
-        *id_pattern           = new std::regex(ID_PATTERN);
-        *attach_pattern       = new std::regex(ATTACH_PATTERN);
-        *encoding_pattern;    = new std::regex(ENCODING_PATTERN);
-        *description_pattern  = new std::regex(DESCRIPTION_PATTERN);
-        *type_pattern         = new std::regex(TYPE_PATTERN);
-        *filename_pattern     = new std::regex(FILENAME_PATTERN);
+        id_pattern           = new std::regex(ID_PATTERN);
         
-        *hint2047             = new std::regex(RFC2047HINT);
-        *hint2231             = new std::regex(RFC2231HINT);        
+        encoding_pattern     = new std::regex(ENCODING_PATTERN);
+        description_pattern  = new std::regex(DESCRIPTION_PATTERN);
+        type_pattern         = new std::regex(TYPE_PATTERN);
+        
+		attach_pattern       = new std::regex(ATTACH_PATTERN);
+		filename_pattern     = new std::regex(FILENAME_PATTERN);
+        filesize_pattern     = new std::regex(FILESIZE_PATTERN);
+	    filecd_pattern       = new std::regex(FILECD_PATTERN);
+	    filemd_pattern       = new std::regex(FILEMD_PATTERN);
+	    filerd_pattern       = new std::regex(FILERD_PATTERN);		
+		
+        hint2047             = new std::regex(RFC2047HINT);
+        hint2231             = new std::regex(RFC2231HINT);        
     }
     
     ~RegexPatterns()
     {
         delete(id_pattern);
-        delete(attach_pattern);
+        
         delete(encoding_pattern);
         delete(description_pattern);
         delete(type_pattern);
-        delete(filename_pattern);
-        
+ 
+		delete(attach_pattern);
+		delete(filename_pattern);
+		delete(filesize_pattern);
+		delete(filecd_pattern);
+		delete(filemd_pattern);		
+		delete(filerd_pattern);		
+			
         delete(hint2047);
         delete(hint2231);
     }
@@ -133,7 +151,7 @@ static std::string get_decoded_text_rfc2047(std::string & token)
     return decoded_text;
 }
 
-static std::string parse_rfc2047(std::string & str)
+static std::string parse_rfc2047(std::string const & str)
 {
     std::string filename = "";
 
@@ -172,7 +190,7 @@ static std::string url_decode(std::string const &str)
     return res;
 }
 
-static std::string get_decoded_text_rfc2231(std::string & token)
+static std::string get_decoded_text_rfc2231(std::string const & token)
 {
     std::string decoded_text = "";
     std::vector<std::string> sub_tokens = encoded_words(token, '\'');
@@ -295,15 +313,11 @@ static void remove_carriage_return_if_needed(std::string & str)
 
 static bool header_key(std::string const & line, RegexPatterns const & patterns)
 {
-    /*std::regex id_pattern(ID_PATTERN);
-    std::regex attach_pattern(ATTACH_PATTERN);
-    std::regex encoding_pattern(ENCODING_PATTERN);
-    std::regex description_pattern(DESCRIPTION_PATTERN);
-    std::regex type_pattern(TYPE_PATTERN);
-    std::regex filename_pattern(FILENAME_PATTERN);*/
     
     if (regex_search(line, *(patterns.id_pattern)) || regex_search(line, *(patterns.attach_pattern)) || regex_search(line, *(patterns.encoding_pattern)) 
-        || regex_search(line, *(patterns.description_pattern)) || regex_search(line, *(patterns.type_pattern)) || regex_search(line, *(patterns.filename_pattern)))
+        || regex_search(line, *(patterns.description_pattern)) || regex_search(line, *(patterns.type_pattern)) || regex_search(line, *(patterns.filename_pattern)) 
+	        ||  regex_search(line, *(patterns.filesize_pattern)) ||  regex_search(line, *(patterns.filesize_pattern))
+			 ||  regex_search(line, *(patterns.filesize_pattern)) ||  regex_search(line, *(patterns.filesize_pattern)))
     {
         return true;
     }
@@ -341,7 +355,7 @@ int main(int argc, char *argv[])
     std::regex attach_pattern(ATTACH_PATTERN);
     std::regex filename_pattern(FILENAME_PATTERN);
 
-    RegexPatterns patterns();
+    RegexPatterns patterns;
 
     std::string attach_filename = "";
 
@@ -356,6 +370,8 @@ int main(int argc, char *argv[])
     std::string cur_filename  = "";
     std::vector<std::string> filename_tokens;
 
+
+    size_t attachments_cnt = 0;
     while (getline(eml_file, line))
     {
         remove_carriage_return_if_needed(line);
@@ -364,7 +380,8 @@ int main(int argc, char *argv[])
         // Условия, если запущен процесс аккумуляции имени файла, текующая строка не пустая и не является токеном хедера или началом вложения
         if (!empty_line(line) && filename_parsing_starts && !header_key(line, patterns) && !attach_body_start_found)
         {
-            cur_filename += line;
+            //std::cout << "line: "<< line << "\n";
+			cur_filename += line;
         }
         else if (filename_parsing_starts && (empty_line(line)  || header_key(line, patterns) || attach_body_start_found))
         {
@@ -390,6 +407,7 @@ int main(int argc, char *argv[])
         if (regex_search(line, bound_pattern))
         {
              std::string temp_boundary =  "--" + get_boundary_val(line);
+
              if (cur_boundary != temp_boundary)
                  cur_boundary = temp_boundary;
         }
@@ -398,15 +416,19 @@ int main(int argc, char *argv[])
         if (regex_search(line, attach_pattern))
         {
             attach_found = true;
-            //std::cout << "attachment found " << line  << std::endl;
+           // std::cout << "attachment found " << line  << std::endl;
         }
 
         if (attach_found && attach_body_start_found)
         {
-            if (line == cur_boundary || empty_line(line))
+            
+		    if (line == cur_boundary || empty_line(line))
             {
-                attach_found            = false;
+                //std::cout << "cur_boundary: "<< cur_boundary << "\n";
+				attach_found            = false;
                 attach_body_start_found = false;
+				attachments_cnt++;
+				//std::cout << "attachment DATA: "<< attachment_data << "\n";
                 try
                 {
                     decoded_attachment_data = base64::from_base64(attachment_data);  
@@ -419,7 +441,8 @@ int main(int argc, char *argv[])
 
                 //Из токенов файлов собираем название файла и декодируем его в зависимости от кодировки
                 attach_filename = get_attach_filename(filename_tokens);
-                std::cout << "attachment filename before encode: "<< attach_filename << "\n";
+                //std::cout << "attachment filename before encode: "<< attach_filename << "\n";
+
                 switch(check_encoding(attach_filename))
                 {
                     case RFC2047_ENCODE: 
@@ -432,7 +455,7 @@ int main(int argc, char *argv[])
                     default:
                         break;
                 }
-
+                
                 if (!save_str_to_file(attach_filename, decoded_attachment_data))
                     std::cout << "Could not save the attachment!\n";
                 else 
@@ -452,5 +475,7 @@ int main(int argc, char *argv[])
             attach_body_start_found = true;
         }
     }
+	std::cout << "Total attachments found: " << attachments_cnt << std::endl;
+	
     eml_file.close();
 }
