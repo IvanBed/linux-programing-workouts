@@ -1,10 +1,13 @@
 #include "get_attachments.hpp"
-
+#include <fcntl.h>
+#include <unistd.h>
 // TO DO 
 // Добавить:
 // Проверку charset
 // Сбор информации по кодировкам
 // Предкомпиляцию регулярных выражений Done
+
+std::string quoted_printable(std::string const &);
 
 struct RegexPatterns
 {
@@ -130,7 +133,7 @@ static std::string get_decoded_text_rfc2047(std::string & token)
         to_utf8(encodedtext);
     }
 
-    if (encoding == "B")
+    if (encoding == "B" || encoding == "b")
     {
         try
         {
@@ -142,10 +145,9 @@ static std::string get_decoded_text_rfc2047(std::string & token)
             decoded_text = "";
         }
     }
-    // Реализовать энкодинг Quoted-Printable
-    else if (encoding == "Q")
+    else if (encoding == "Q" || encoding == "q")
     {
-        decoded_text = encodedtext;
+        decoded_text = quoted_printable(encodedtext);
     }
     
     return decoded_text;
@@ -277,14 +279,31 @@ static bool empty_line(std::string const & line)
         return false;
 }
 
+static bool save_str_to_file_linux(std::string const & out_filename, std::string const & data)
+{
+    int fd = open(out_filename.c_str(), O_WRONLY | O_CREAT | O_LARGEFILE, 0644);
+    write(fd, data.c_str(), data.size());
+    close(fd);
+	return true;
+}
+
 static bool save_str_to_file(std::string const & out_filename, std::string const & data)
 {
     std::ofstream out;
+	std::cout << "Filename: " << out_filename << std::endl;
+	
     out.open(out_filename, std::ios::binary);
     if (!out.is_open()) 
     {
-        std::cerr << "Error: Unable to open file! Error number: " << std::strerror(errno) << std::endl;
-        return false;
+        if (save_str_to_file_linux(out_filename, data))
+		{
+			return true;
+		}
+		else 
+		{
+		    std::cerr << "Error: Unable to open file! Error number: " << std::strerror(errno) << std::endl;
+			return false;
+		}   
     }
     else
     {
@@ -312,12 +331,11 @@ static void remove_carriage_return_if_needed(std::string & str)
 }
 
 static bool header_key(std::string const & line, RegexPatterns const & patterns)
-{
-    
+{   
     if (regex_search(line, *(patterns.id_pattern)) || regex_search(line, *(patterns.attach_pattern)) || regex_search(line, *(patterns.encoding_pattern)) 
         || regex_search(line, *(patterns.description_pattern)) || regex_search(line, *(patterns.type_pattern)) || regex_search(line, *(patterns.filename_pattern)) 
-	        ||  regex_search(line, *(patterns.filesize_pattern)) ||  regex_search(line, *(patterns.filesize_pattern))
-			 ||  regex_search(line, *(patterns.filesize_pattern)) ||  regex_search(line, *(patterns.filesize_pattern)))
+	        ||  regex_search(line, *(patterns.filesize_pattern)) ||  regex_search(line, *(patterns.filecd_pattern))
+			 ||  regex_search(line, *(patterns.filemd_pattern)) ||  regex_search(line, *(patterns.filerd_pattern)))
     {
         return true;
     }
@@ -340,7 +358,7 @@ int main(int argc, char *argv[])
         std::cerr << "Enter the path to the file" << std::endl;
         return 1;
     }
-
+	
     std::ifstream eml_file(eml_filename);
 
     if (!eml_file.is_open()) 
@@ -441,7 +459,7 @@ int main(int argc, char *argv[])
 
                 //Из токенов файлов собираем название файла и декодируем его в зависимости от кодировки
                 attach_filename = get_attach_filename(filename_tokens);
-                //std::cout << "attachment filename before encode: "<< attach_filename << "\n";
+                std::cout << "attachment filename before encode: "<< attach_filename << "\n";
 
                 switch(check_encoding(attach_filename))
                 {

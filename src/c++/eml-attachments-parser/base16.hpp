@@ -3,7 +3,7 @@
     #include <cmath>
     #include <cctype>
 	#include <string>
-	
+
     std::string quoted_printable(std::string const &);
 
 #endif

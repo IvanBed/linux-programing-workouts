@@ -1,6 +1,5 @@
 #include "base16.hpp"
 
-namespace hex16 {
 static char get_hex_char_from_decimal_digit(int num)
 {
     if (num > 15)
@@ -133,6 +132,4 @@ std::string quoted_printable(std::string const &str)
     
     res += (char) hex_to_decimal(hex_token);
     return res;
-}
-
 }
