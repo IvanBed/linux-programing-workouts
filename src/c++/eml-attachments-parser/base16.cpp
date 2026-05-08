@@ -1,4 +1,27 @@
 #include "base16.hpp"
+#include <iostream>
+
+#define NO_OFFSET    127
+#define FIRST_OFFSET 191
+
+#define FIRSTBYTE    208
+
+
+struct Charset
+{
+	charset_offset ISO_8859_5;
+	charset_offset Win_1251;
+    charset_offset KOI_8R;
+    charset_offset UNKNOWN;
+
+    Charset()
+    {
+	    ISO_8859_5 = {32, 64};
+	    Win_1251   = {48, 64};
+        KOI_8R     = {82, 82};
+        UNKNOWN    = {0, 0};        
+    } 
+};
 
 static char get_hex_char_from_decimal_digit(int num)
 {
@@ -45,9 +68,9 @@ static char get_hex_char_from_decimal_digit(int num)
 static bool is_hex_char(char hex_char)
 {
     if ('A' <= hex_char && hex_char <= 'F' || '0' <= hex_char && hex_char <= '9')
-            return true;
+        return true;
     else
-            return false;
+        return false;
 }
 
 static int get_decimal_digit_from_hex_char(char hex_char)
@@ -92,13 +115,13 @@ static int get_decimal_digit_from_hex_char(char hex_char)
     }
 }
 
-std::string decimal_to_hex(int64_t num)
+static std::string decimal_to_hex(int64_t num)
 {
     std::string hex_num = "";
     return hex_num;
 }
 
-int64_t hex_to_decimal(std::string const & hex_num)
+static int64_t hex_to_decimal(std::string const & hex_num)
 {
     int64_t res_num     = 0;
     size_t  start_pos   = hex_num.size() - 1;
@@ -109,27 +132,63 @@ int64_t hex_to_decimal(std::string const & hex_num)
     return res_num;
 }
 
-std::string quoted_printable(std::string const &str)
+static std::string decode_hex(std::string const & hex_token, charset_offset const & offset)
 {
-    std::string res       = "";
-    std::string hex_token = "";
+	std::string res = "";
+	int8_t byte_1;
+	int8_t byte_2;	
+    byte_1 = FIRSTBYTE;
+	byte_2 = (int8_t) hex_to_decimal(hex_token);
+	
+	if (byte_2 > NO_OFFSET)
+		byte_2-= offset.first;
+	
+	if (byte_2 > FIRST_OFFSET)
+	{
+		byte_1 += 1;
+		byte_2 -= offset.second;
+	}
+	res += (char)byte_1;
+	res += (char)byte_2;
+	
+	return res;
+}
+
+static std::string decode_hex_with_charset(std::string const & hex_token, std::string const & charset, Charset const & charset_vals)
+{
+    if (charset == "ISO-8859-5")
+		return decode_hex(hex_token, charset_vals.ISO_8859_5);
     
+	if (charset == "Windows-1251" || charset == "Win-1251")
+		return decode_hex(hex_token, charset_vals.Win_1251);	
+	
+	//if (charset == "KOI-8R")
+	//	return decode_hex(hex_token, charset_vals.KOI_8R);
+	
+	return std::to_string(hex_to_decimal(hex_token));
+}
+
+std::string quoted_printable(std::string const & str, std::string const & charset)
+{
+    std::string hex_token = "";
+    std::string res       = "";	
+	
+	Charset charset_vals;
+	//std::cout << str << std::endl;
+	//std::cout << charset << std::endl;
+	
     for (size_t i = 0; i < str.size(); i++)
     {
-        if (is_hex_char(toupper(str[i])))
+        if (str[i] == '=')
         {
-            hex_token += str[i];
-        }
-        else 
-        {
-            res += (char) hex_to_decimal(hex_token);
-            hex_token = "";
-            
-            if (str[i] != '=')
-                res += str[i];    
-        }
-    }
-    
-    res += (char) hex_to_decimal(hex_token);
-    return res;
+			hex_token = str.substr(i + 1, 2);
+			res += decode_hex_with_charset(hex_token, charset, charset_vals);
+			i += 2;
+		}
+		else 
+		{
+			res += str[i];
+		}
+    }	
+	return res;
 }

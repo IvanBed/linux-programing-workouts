@@ -18,7 +18,7 @@
     // Header keys
     #define ATTACH_PATTERN   "Content-Disposition: attachment*"
 	// Content-Disposition params
-	#define FILENAME_PATTERN "filename*"
+	#define FILENAME_PATTERN "filename*|FileName*|FILENAME*"
 	#define FILESIZE_PATTERN "size=*"
 	
 	#define FILECD_PATTERN "creation-date=*"
@@ -50,4 +50,4 @@
 
     typedef enum encode encode_result; 
 
-#endif GET_ATTACHMENTS_HPP
+#endif

@@ -29,18 +29,19 @@ struct RegexPatterns
     
     explicit RegexPatterns()
     {
-        id_pattern           = new std::regex(ID_PATTERN);
+        
+		id_pattern           = new std::regex(ID_PATTERN);
         
         encoding_pattern     = new std::regex(ENCODING_PATTERN);
         description_pattern  = new std::regex(DESCRIPTION_PATTERN);
         type_pattern         = new std::regex(TYPE_PATTERN);
         
 		attach_pattern       = new std::regex(ATTACH_PATTERN);
-		filename_pattern     = new std::regex(FILENAME_PATTERN);
-        filesize_pattern     = new std::regex(FILESIZE_PATTERN);
-	    filecd_pattern       = new std::regex(FILECD_PATTERN);
-	    filemd_pattern       = new std::regex(FILEMD_PATTERN);
-	    filerd_pattern       = new std::regex(FILERD_PATTERN);		
+		filename_pattern     = new std::regex(FILENAME_PATTERN, std::regex_constants::icase);
+        filesize_pattern     = new std::regex(FILESIZE_PATTERN, std::regex_constants::icase);
+	    filecd_pattern       = new std::regex(FILECD_PATTERN, std::regex_constants::icase);
+	    filemd_pattern       = new std::regex(FILEMD_PATTERN, std::regex_constants::icase);
+	    filerd_pattern       = new std::regex(FILERD_PATTERN, std::regex_constants::icase);		
 		
         hint2047             = new std::regex(RFC2047HINT);
         hint2231             = new std::regex(RFC2231HINT);        
@@ -128,6 +129,12 @@ static std::string get_decoded_text_rfc2047(std::string & token)
     std::string encoding     = sub_tokens[1];
     std::string encodedtext  = sub_tokens[2];
    
+    /*std::cout << "---------------------------" << std::endl;
+    std::cout << charset << std::endl;
+    std::cout << encoding << std::endl;
+	std::cout << encodedtext << std::endl;
+    std::cout << "---------------------------" << std::endl;
+	*/
     if (charset == "utf-8")
     {
         to_utf8(encodedtext);
@@ -147,7 +154,7 @@ static std::string get_decoded_text_rfc2047(std::string & token)
     }
     else if (encoding == "Q" || encoding == "q")
     {
-        decoded_text = quoted_printable(encodedtext);
+        decoded_text = quoted_printable(encodedtext, charset);
     }
     
     return decoded_text;
@@ -179,7 +186,7 @@ static std::string url_decode(std::string const &str)
     for (size_t i = 0; i < str.length(); i++) {
         if (str[i] == '%') 
         {
-            sscanf(str.substr(i + 1, 2).c_str(), "%x", &temp);
+            sscanf(str.substr(i + 1, 2).c_str(), "%lx", &temp);
             ch   = static_cast<char>(temp);
             res += ch;
             i = i + 2;
@@ -200,7 +207,14 @@ static std::string get_decoded_text_rfc2231(std::string const & token)
     std::string charset     = sub_tokens[0];
     std::string lang        = sub_tokens[1];
     std::string encodedtext = sub_tokens[2];
-    if (charset == "utf-8")
+    
+	/*
+	std::cout << charset << std::endl;
+    std::cout << lang << std::endl;
+	std::cout << encodedtext << std::endl;   
+	*/
+	
+	if (charset == "utf-8")
     {
         to_utf8(encodedtext);
     }
@@ -398,13 +412,13 @@ int main(int argc, char *argv[])
         // Условия, если запущен процесс аккумуляции имени файла, текующая строка не пустая и не является токеном хедера или началом вложения
         if (!empty_line(line) && filename_parsing_starts && !header_key(line, patterns) && !attach_body_start_found)
         {
-            //std::cout << "line: "<< line << "\n";
+            
 			cur_filename += line;
         }
         else if (filename_parsing_starts && (empty_line(line)  || header_key(line, patterns) || attach_body_start_found))
         {
             std::string filename = get_filename_val(cur_filename);
-            
+            //std::cout << "filename: "<< filename << "\n";
             filename_tokens.push_back(filename);
             filename_parsing_starts = false;
             cur_filename = "";
@@ -459,8 +473,10 @@ int main(int argc, char *argv[])
 
                 //Из токенов файлов собираем название файла и декодируем его в зависимости от кодировки
                 attach_filename = get_attach_filename(filename_tokens);
-                std::cout << "attachment filename before encode: "<< attach_filename << "\n";
-
+                //std::cout << "attach_filename: " << attach_filename << std::endl;
+				if (attach_filename.empty())
+					attach_filename = "temp" + std::to_string(attachments_cnt);
+				
                 switch(check_encoding(attach_filename))
                 {
                     case RFC2047_ENCODE: 
