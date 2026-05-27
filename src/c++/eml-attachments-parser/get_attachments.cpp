@@ -24,6 +24,8 @@ struct RegexPatterns
 	std::regex *filemd_pattern;
 	std::regex *filerd_pattern;
 	
+	std::regex *anti_virus_pattern;
+	
     std::regex *hint2047;
     std::regex *hint2231;
     
@@ -43,6 +45,8 @@ struct RegexPatterns
 	    filemd_pattern       = new std::regex(FILEMD_PATTERN, std::regex_constants::icase);
 	    filerd_pattern       = new std::regex(FILERD_PATTERN, std::regex_constants::icase);		
 		
+		anti_virus_pattern   = new std::regex(ANTIVIRUS_PATTERN, std::regex_constants::icase);		
+		
         hint2047             = new std::regex(RFC2047HINT);
         hint2231             = new std::regex(RFC2231HINT);        
     }
@@ -61,7 +65,9 @@ struct RegexPatterns
 		delete(filecd_pattern);
 		delete(filemd_pattern);		
 		delete(filerd_pattern);		
-			
+		
+		delete(anti_virus_pattern);	
+		
         delete(hint2047);
         delete(hint2231);
     }
@@ -349,7 +355,7 @@ static bool header_key(std::string const & line, RegexPatterns const & patterns)
     if (regex_search(line, *(patterns.id_pattern)) || regex_search(line, *(patterns.attach_pattern)) || regex_search(line, *(patterns.encoding_pattern)) 
         || regex_search(line, *(patterns.description_pattern)) || regex_search(line, *(patterns.type_pattern)) || regex_search(line, *(patterns.filename_pattern)) 
 	        ||  regex_search(line, *(patterns.filesize_pattern)) ||  regex_search(line, *(patterns.filecd_pattern))
-			 ||  regex_search(line, *(patterns.filemd_pattern)) ||  regex_search(line, *(patterns.filerd_pattern)))
+			 ||  regex_search(line, *(patterns.filemd_pattern)) ||  regex_search(line, *(patterns.filerd_pattern)) || regex_search(line, *(patterns.anti_virus_pattern)) )
     {
         return true;
     }
@@ -412,7 +418,6 @@ int main(int argc, char *argv[])
         // Условия, если запущен процесс аккумуляции имени файла, текующая строка не пустая и не является токеном хедера или началом вложения
         if (!empty_line(line) && filename_parsing_starts && !header_key(line, patterns) && !attach_body_start_found)
         {
-            
 			cur_filename += line;
         }
         else if (filename_parsing_starts && (empty_line(line)  || header_key(line, patterns) || attach_body_start_found))
@@ -454,7 +459,7 @@ int main(int argc, char *argv[])
         if (attach_found && attach_body_start_found)
         {
             
-		    if (line == cur_boundary || empty_line(line))
+		    if (line.find(cur_boundary) != std::string::npos || empty_line(line))
             {
                 //std::cout << "cur_boundary: "<< cur_boundary << "\n";
 				attach_found            = false;

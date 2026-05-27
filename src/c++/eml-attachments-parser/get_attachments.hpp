@@ -19,6 +19,8 @@
     #define ATTACH_PATTERN   "Content-Disposition: attachment*"
 	// Content-Disposition params
 	#define FILENAME_PATTERN "filename*|FileName*|FILENAME*"
+	
+	#define ANTIVIRUS_PATTERN "AntiVirus.*Status.*"
 	#define FILESIZE_PATTERN "size=*"
 	
 	#define FILECD_PATTERN "creation-date=*"

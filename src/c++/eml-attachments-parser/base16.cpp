@@ -135,10 +135,12 @@ static int64_t hex_to_decimal(std::string const & hex_num)
 static std::string decode_hex(std::string const & hex_token, charset_offset const & offset)
 {
 	std::string res = "";
-	int8_t byte_1;
-	int8_t byte_2;	
+	int64_t byte_1;
+	int64_t byte_2;	
     byte_1 = FIRSTBYTE;
-	byte_2 = (int8_t) hex_to_decimal(hex_token);
+	byte_2 = (int64_t) hex_to_decimal(hex_token);
+	
+	std::cout << "byte_2:" << hex_to_decimal(hex_token) << "\n";
 	
 	if (byte_2 > NO_OFFSET)
 		byte_2-= offset.first;
@@ -151,6 +153,8 @@ static std::string decode_hex(std::string const & hex_token, charset_offset cons
 	res += (char)byte_1;
 	res += (char)byte_2;
 	
+	std::cout << hex_token << "\n";
+	std::cout << res << "\n";
 	return res;
 }
 
