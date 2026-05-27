@@ -14,11 +14,7 @@ const (
 func makeOutputPath(destPath string, srcPath string) string {
 	fi, err := os.Stat(destPath)
 	if err == nil && fi.Mode().IsDir() {
-		if destPath[len(destPath)-1] != '/' {
-			destPath = destPath + "/"
-		}
-
-		destPath = filepath.Dir(destPath) + "/" + filepath.Base(srcPath)
+		destPath = filepath.Join(filepath.Dir(destPath), filepath.Base(srcPath))
 	}
 	return destPath
 }
@@ -88,13 +84,12 @@ func recursiveCopy(destDir string, srcDir string) {
 		//errors.append()
 	}
 	for _, entry := range dirEntries {
-		entryFullPath := srcDir + "/" + entry.Name()
-
+		entryFullPath := filepath.Join(srcDir, entry.Name())
 		if entry.IsDir() {
 			recursiveCopy(destDir, entryFullPath)
 		} else {
-			os.MkdirAll(destDir+srcDir, 0755)
-			copyFile(destDir+entryFullPath, entryFullPath)
+			os.MkdirAll(filepath.Join(destDir, srcDir), 0755)
+			copyFile(filepath.Join(destDir, entryFullPath), entryFullPath)
 		}
 	}
 }
@@ -146,13 +141,8 @@ func main() {
 
 			if !srcPathInfo.IsDir() {
 				currentDestPath = makeOutputPath(destPath, srcFile)
-				fmt.Println(currentDestPath)
-				fmt.Println(srcFile)
 				copyFile(currentDestPath, srcFile)
 			} else {
-				if destPath[len(destPath)-1] != '/' {
-					currentDestPath = destPath + "/"
-				}
 				recursiveCopy(currentDestPath, srcFile)
 			}
 
