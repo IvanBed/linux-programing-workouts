@@ -16,7 +16,7 @@ const (
 func makeDestPath(destPath string, srcPath string) string {
 	fi, err := os.Stat(destPath)
 	if err == nil && fi.Mode().IsDir() {
-		destPath = filepath.Join(filepath.Dir(destPath), filepath.Base(srcPath))
+		destPath = filepath.Join(destPath, filepath.Base(srcPath))
 	}
 	if err != nil {
 		fmt.Println(err)
@@ -24,7 +24,7 @@ func makeDestPath(destPath string, srcPath string) string {
 	return destPath
 }
 
-func copyFile(destPath string, srcPath string) {
+func copyFile(destPath string, srcPath string, perms os.FileMode) {
 
 	var buff_size int = 4096
 	buff := make([]byte, buff_size)
@@ -38,7 +38,7 @@ func copyFile(destPath string, srcPath string) {
 	defer srcFile.Close()
 
 	fmt.Println("Open dest file ", destPath)
-	destFile, err := os.OpenFile(destPath, os.O_RDWR|os.O_CREATE, 0644)
+	destFile, err := os.OpenFile(destPath, os.O_RDWR|os.O_CREATE, perms)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -81,7 +81,7 @@ func getFlag(mode string) uint8 {
 }
 
 // rewrite with stringBuffer
-func recursiveCopy(destDir string, srcDir string, errors []error) {
+func recursiveCopy(destDir string, srcDir string, perms os.FileMode, errors []error) {
 	dirEntries, err := os.ReadDir(srcDir)
 
 	if err != nil {
@@ -89,11 +89,13 @@ func recursiveCopy(destDir string, srcDir string, errors []error) {
 	}
 	for _, entry := range dirEntries {
 		entryFullPath := filepath.Join(srcDir, entry.Name())
+
+		os.MkdirAll(destDir, 0755)
 		if entry.IsDir() {
-			recursiveCopy(filepath.Join(destDir, entry.Name()), entryFullPath, errors)
+			fmt.Println(filepath.Join(destDir, entry.Name()))
+			recursiveCopy(filepath.Join(destDir, entry.Name()), entryFullPath, perms, errors)
 		} else {
-			os.MkdirAll(destDir, 0755)
-			copyFile(filepath.Join(destDir, entry.Name()), entryFullPath)
+			copyFile(filepath.Join(destDir, entry.Name()), entryFullPath, perms)
 		}
 	}
 }
@@ -106,7 +108,7 @@ func main() {
 	var argsCount int
 	var errors []error
 	var currentDestPath string
-
+	var perms os.FileMode
 	argsCount = len(os.Args)
 
 	if argsCount < 3 {
@@ -134,31 +136,21 @@ func main() {
 			return
 		}
 	}
-
 	errors = make([]error, 0)
 
 	for _, srcFile := range srcPath {
-
 		srcPathInfo, err := os.Stat(srcFile)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-
-		if flag == RECURSIVE {
-
-			if !srcPathInfo.IsDir() {
-				currentDestPath = makeDestPath(destPath, srcFile)
-				copyFile(currentDestPath, srcFile)
-			} else {
-				currentDestPath = filepath.Join(destPath, filepath.Base(srcFile))
-				recursiveCopy(currentDestPath, srcFile, errors)
-			}
-
+		perms = srcPathInfo.Mode().Perm()
+		currentDestPath = makeDestPath(destPath, srcFile)
+		if !srcPathInfo.IsDir() {
+			copyFile(currentDestPath, srcFile, srcPathInfo.Mode().Perm())
 		} else {
-			if !srcPathInfo.IsDir() {
-				currentDestPath = makeDestPath(destPath, srcFile)
-				copyFile(currentDestPath, srcFile)
+			if flag == RECURSIVE {
+				recursiveCopy(currentDestPath, srcFile, perms, errors)
 			} else {
 				fmt.Printf("cp: -r not specified; omitting directory %s\n", srcFile)
 			}
