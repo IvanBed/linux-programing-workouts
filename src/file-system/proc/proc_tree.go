@@ -4,27 +4,24 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
+
+	//"path/filepath"
 	"strconv"
 	"strings"
 )
 
-func tryGetPPid(line string) (bool, int) {
+func tryGetPPid(line string) (bool, string) {
+	var ppid string = ""
 	tokens := strings.Split(line, ":")
-
 	if tokens[0] == "PPid" {
-		ppid, err := strconv.Atoi(strings.TrimSpace(tokens[1]))
-		if err != nil {
-			fmt.Println(err)
-			return false, -1
-		}
+		ppid = strings.TrimSpace(tokens[1])
 		return true, ppid
 	} else {
-		return false, -1
+		return false, ppid
 	}
 }
 
-func getPPidFromStatusFile(statusFile *os.File) (bool, int) {
+func getPPidFromStatusFile(statusFile *os.File) (bool, string) {
 	scanner := bufio.NewScanner(statusFile)
 	for scanner.Scan() {
 		found, ppid := tryGetPPid(scanner.Text())
@@ -32,20 +29,18 @@ func getPPidFromStatusFile(statusFile *os.File) (bool, int) {
 			return true, ppid
 		}
 	}
-	return false, -1
+	return false, ""
 }
 
 // pid передавать как строку
-func getPidTree(pid int, pids *[]int) {
+func getPidTree(pid string, pids *[]string) {
 
-	if pid == 0 {
+	if pid == "0" {
 		return
 	}
 	// переделать через sprintf
 
-	procFilePath := filepath.Join("/proc", strconv.Itoa(pid))
-	statusFilePath := filepath.Join(procFilePath, "status")
-
+	statusFilePath := "/proc/" + pid + "/status"
 	procStatusFile, err := os.Open(statusFilePath)
 	if err != nil {
 		fmt.Println(err)
@@ -77,10 +72,10 @@ func main() {
 		}
 	}
 
-	ppids := make([]int, 1)
-	ppids[0] = target_pid
+	ppids := make([]string, 1)
+	ppids[0] = strconv.Itoa(target_pid)
 
-	getPidTree(target_pid, &ppids)
+	getPidTree(ppids[0], &ppids)
 
 	for _, pid := range ppids {
 		fmt.Println(pid)
