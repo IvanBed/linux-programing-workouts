@@ -11,66 +11,32 @@ std::string quoted_printable(std::string const &);
 
 struct RegexPatterns
 {
-    std::regex *id_pattern;
-    std::regex *encoding_pattern;
-    std::regex *description_pattern;
-    std::regex *type_pattern;
+    std::regex id_pattern;
+    std::regex encoding_pattern;
+    std::regex description_pattern;
+    std::regex type_pattern;
 	
-	std::regex *attach_pattern;
-    std::regex *filename_pattern;
-    std::regex *filesize_pattern;
+	std::regex attach_pattern;
+    std::regex filename_pattern;
+    std::regex filesize_pattern;
 	
-	std::regex *filecd_pattern;
-	std::regex *filemd_pattern;
-	std::regex *filerd_pattern;
+	std::regex filecd_pattern;
+	std::regex filemd_pattern;
+	std::regex filerd_pattern;
 	
-	std::regex *anti_virus_pattern;
+	std::regex anti_virus_pattern;
 	
-    std::regex *hint2047;
-    std::regex *hint2231;
+    std::regex hint2047;
+    std::regex hint2231;
     
-    explicit RegexPatterns()
-    {
-        
-		id_pattern           = new std::regex(ID_PATTERN);
-        
-        encoding_pattern     = new std::regex(ENCODING_PATTERN);
-        description_pattern  = new std::regex(DESCRIPTION_PATTERN);
-        type_pattern         = new std::regex(TYPE_PATTERN);
-        
-		attach_pattern       = new std::regex(ATTACH_PATTERN);
-		filename_pattern     = new std::regex(FILENAME_PATTERN, std::regex_constants::icase);
-        filesize_pattern     = new std::regex(FILESIZE_PATTERN, std::regex_constants::icase);
-	    filecd_pattern       = new std::regex(FILECD_PATTERN, std::regex_constants::icase);
-	    filemd_pattern       = new std::regex(FILEMD_PATTERN, std::regex_constants::icase);
-	    filerd_pattern       = new std::regex(FILERD_PATTERN, std::regex_constants::icase);		
-		
-		anti_virus_pattern   = new std::regex(ANTIVIRUS_PATTERN, std::regex_constants::icase);		
-		
-        hint2047             = new std::regex(RFC2047HINT);
-        hint2231             = new std::regex(RFC2231HINT);        
-    }
+    explicit RegexPatterns() : id_pattern(ID_PATTERN), encoding_pattern(ENCODING_PATTERN), description_pattern(DESCRIPTION_PATTERN), 
+							   type_pattern(TYPE_PATTERN), attach_pattern(ATTACH_PATTERN), filename_pattern(FILENAME_PATTERN, std::regex_constants::icase),
+							   filesize_pattern(FILESIZE_PATTERN, std::regex_constants::icase), filecd_pattern(FILECD_PATTERN, std::regex_constants::icase),
+							   filemd_pattern(FILEMD_PATTERN, std::regex_constants::icase), filerd_pattern(FILERD_PATTERN, std::regex_constants::icase),
+							   anti_virus_pattern(ANTIVIRUS_PATTERN, std::regex_constants::icase), hint2047(RFC2047HINT), hint2231(RFC2231HINT)
+    {}
     
-    ~RegexPatterns()
-    {
-        delete(id_pattern);
-        
-        delete(encoding_pattern);
-        delete(description_pattern);
-        delete(type_pattern);
- 
-		delete(attach_pattern);
-		delete(filename_pattern);
-		delete(filesize_pattern);
-		delete(filecd_pattern);
-		delete(filemd_pattern);		
-		delete(filerd_pattern);		
-		
-		delete(anti_virus_pattern);	
-		
-        delete(hint2047);
-        delete(hint2231);
-    }
+
 };
 
 void to_utf8(std::string &str)
@@ -78,25 +44,39 @@ void to_utf8(std::string &str)
 
 }
 
-static std::vector<std::string> split_line(std::string const & line, char separator)
+static bool contain(std::vector<char> const & vect, char ch)
+{
+    auto result{std::find(begin(vect), std::end(vect), ch)};
+    if (result != std::end(vect))
+        return true;
+    else
+        return false;
+}
+
+static std::vector<std::string> split_line(std::string const & line, std::vector<char> const & separators)
 {
     std::vector<std::string> res;
     std::string val = "";
-    for (size_t i = 0; i < line.size(); i++) 
+    
+	for (size_t i = 0; i < line.size(); i++) 
     {
-        if(line[i] != separator) 
+        if(!contain(separators, line[i])) 
         {
-            val += line[i];
+           
+			val += line[i];
+			std::cout << "subtoken: " << val << " ";
         }
         else 
         {
             if (val != "") 
-                res.push_back(val);
+                res.push_back(std::move(val));
             
+			std::cout << "token: " << val << " ";
             val = "";
         }
     }
-    if (val != "") res.push_back(val);
+    if (val != "") 
+		res.push_back(std::move(val));
 
     return res;
 }
@@ -106,20 +86,38 @@ static std::vector<std::string> encoded_words(std::string const & line, char sep
     std::vector<std::string> res(3, "");
     std::string val = "";
     
-    size_t first_del_pos = line.find(separator);
+    size_t first_sep_pos = line.find(separator);
     
-    if (first_del_pos == std::string::npos)
+    if (first_sep_pos == std::string::npos)
     {
         res[2] = line;
         return res;
     }
     
-    size_t second_del_pos = line.find(separator, first_del_pos + 1);
+    size_t second_sep_pos = line.find(separator, first_sep_pos + 1);
 
-    res[0] = line.substr(0, first_del_pos);
-    res[1] = line.substr(first_del_pos + 1, second_del_pos - (first_del_pos + 1));
-    res[2] = line.substr(second_del_pos + 1);
+    res[0] = line.substr(0, first_sep_pos);
+    res[1] = line.substr(first_sep_pos + 1, second_sep_pos - (first_sep_pos + 1));
+    res[2] = line.substr(second_sep_pos + 1);
     
+    return res;
+}
+
+static std::vector<std::string> encoded_words_new(std::string const & line, char separator)
+{   
+    std::vector<std::string> res(3, "");
+    std::string val = "";
+    
+    size_t start_token_pos = 0;
+    size_t index = 0;
+    while (index < line.size())
+    {       
+        size_t start_token_pos = line.find(separator, index);
+        size_t end_token_pos   = line.find(separator, start_token_pos + 1);
+        res.push_back(line.substr(start_token_pos + 1, end_token_pos - (start_token_pos + 1)));
+        index = end_token_pos;
+    }   
+        
     return res;
 }
 
@@ -134,8 +132,8 @@ static std::string get_decoded_text_rfc2047(std::string & token)
     std::string charset      = sub_tokens[0];
     std::string encoding     = sub_tokens[1];
     std::string encodedtext  = sub_tokens[2];
-   
-    /*std::cout << "---------------------------" << std::endl;
+    /*
+    std::cout << "---------------------------" << std::endl;
     std::cout << charset << std::endl;
     std::cout << encoding << std::endl;
 	std::cout << encodedtext << std::endl;
@@ -171,9 +169,9 @@ static std::string parse_rfc2047(std::string const & str)
     std::string filename = "";
 
     std::regex rfc2027(RFC2047);
-
-    std::vector<std::string> tokens = split_line(str, ' ');
-    for (auto & token : tokens)
+    std::vector<char> separators{' ', '\n', '\r', '\t'};
+    std::vector<std::string> tokens = split_line(str, separators);
+	for (auto & token : tokens)
     {
         if (regex_search(token, rfc2027))
         {    
@@ -352,10 +350,10 @@ static void remove_carriage_return_if_needed(std::string & str)
 
 static bool header_key(std::string const & line, RegexPatterns const & patterns)
 {   
-    if (regex_search(line, *(patterns.id_pattern)) || regex_search(line, *(patterns.attach_pattern)) || regex_search(line, *(patterns.encoding_pattern)) 
-        || regex_search(line, *(patterns.description_pattern)) || regex_search(line, *(patterns.type_pattern)) || regex_search(line, *(patterns.filename_pattern)) 
-	        ||  regex_search(line, *(patterns.filesize_pattern)) ||  regex_search(line, *(patterns.filecd_pattern))
-			 ||  regex_search(line, *(patterns.filemd_pattern)) ||  regex_search(line, *(patterns.filerd_pattern)) || regex_search(line, *(patterns.anti_virus_pattern)) )
+    if (regex_search(line, patterns.id_pattern) || regex_search(line, patterns.attach_pattern) || regex_search(line, patterns.encoding_pattern) 
+        || regex_search(line, patterns.description_pattern) || regex_search(line, patterns.type_pattern) || regex_search(line, patterns.filename_pattern) 
+	        ||  regex_search(line, patterns.filesize_pattern) ||  regex_search(line, patterns.filecd_pattern)
+			 ||  regex_search(line, patterns.filemd_pattern) ||  regex_search(line, patterns.filerd_pattern) || regex_search(line, patterns.anti_virus_pattern) )
     {
         return true;
     }
@@ -478,7 +476,7 @@ int main(int argc, char *argv[])
 
                 //Из токенов файлов собираем название файла и декодируем его в зависимости от кодировки
                 attach_filename = get_attach_filename(filename_tokens);
-                //std::cout << "attach_filename: " << attach_filename << std::endl;
+                std::cout << "attach_filename: " << attach_filename << std::endl;
 				if (attach_filename.empty())
 					attach_filename = "temp" + std::to_string(attachments_cnt);
 				
@@ -494,7 +492,7 @@ int main(int argc, char *argv[])
                     default:
                         break;
                 }
-                
+                std::cout << "attach_filename after encode: " << attach_filename << std::endl;
                 if (!save_str_to_file(attach_filename, decoded_attachment_data))
                     std::cout << "Could not save the attachment!\n";
                 else 
