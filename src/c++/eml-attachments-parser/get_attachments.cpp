@@ -299,10 +299,20 @@ static bool empty_line(std::string const & line)
 
 static bool save_str_to_file_linux(std::string const & out_filename, std::string const & data)
 {
-    int fd = open(out_filename.c_str(), O_WRONLY | O_CREAT | O_LARGEFILE, 0644);
-    write(fd, data.c_str(), data.size());
-    close(fd);
-	return true;
+	ssize_t write_cnt;
+    int fd;
+
+    fd = open(out_filename.c_str(), O_WRONLY | O_CREAT | O_LARGEFILE, 0644);
+	if (fd < 0)
+	{
+		return false;
+	}
+    write_cnt = write(fd, data.c_str(), data.size());
+	close(fd);
+	if (write_cnt != data.size())
+        return false;
+	else
+	    return true;
 }
 
 static bool save_str_to_file(std::string const & out_filename, std::string const & data)
@@ -319,7 +329,7 @@ static bool save_str_to_file(std::string const & out_filename, std::string const
 		}
 		else 
 		{
-		    std::cerr << "Error: Unable to open file! Error number: " << std::strerror(errno) << std::endl;
+		    std::cerr << "Error: Unable to write to file! Error number: " << std::strerror(errno) << std::endl;
 			return false;
 		}   
     }
@@ -494,10 +504,14 @@ int main(int argc, char *argv[])
                 }
                 std::cout << "attach_filename after encode: " << attach_filename << std::endl;
                 if (!save_str_to_file(attach_filename, decoded_attachment_data))
-                    std::cout << "Could not save the attachment!\n";
-                else 
-                    std::cout << attach_filename << std::endl;
-                
+				{
+					std::cout << "Could not save the attachment!\n";
+					
+				}                    
+                else
+				{
+					std::cout << attach_filename << std::endl;
+				}
                 attachment_data = "";   
                 filename_tokens.clear();
             }
