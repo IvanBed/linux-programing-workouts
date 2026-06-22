@@ -4,6 +4,11 @@
 #include <cctype>
 #include <string>
 
+#define NO_OFFSET    127
+#define FIRST_OFFSET 191
+
+#define FIRSTBYTE    208
+
 struct charset_offset
 {
 	int first;

@@ -1,12 +1,6 @@
 #include "base16.hpp"
 #include <iostream>
 
-#define NO_OFFSET    127
-#define FIRST_OFFSET 191
-
-#define FIRSTBYTE    208
-
-
 struct Charset
 {
 	charset_offset ISO_8859_5;
@@ -14,7 +8,7 @@ struct Charset
     charset_offset KOI_8R;
     charset_offset UNKNOWN;
 
-    Charset()
+    inline Charset()
     {
 	    ISO_8859_5 = {32, 64};
 	    Win_1251   = {48, 64};
@@ -140,21 +134,46 @@ static std::string decode_hex(std::string const & hex_token, charset_offset cons
     byte_1 = FIRSTBYTE;
 	byte_2 = (int64_t) hex_to_decimal(hex_token);
 	
-	std::cout << "byte_2:" << hex_to_decimal(hex_token) << "\n";
-	
 	if (byte_2 > NO_OFFSET)
-		byte_2-= offset.first;
-	
+    {
+        byte_2-= offset.first;
+    }
+	else 
+    {
+        res += (char)byte_2;
+        return res;
+    }
+
 	if (byte_2 > FIRST_OFFSET)
 	{
 		byte_1 += 1;
 		byte_2 -= offset.second;
 	}
 	res += (char)byte_1;
-	res += (char)byte_2;
+    res += (char)byte_2;
 	
-	std::cout << hex_token << "\n";
-	std::cout << res << "\n";
+	return res;
+}
+
+std::string decode_hex_latin_five(std::string const & hex_token)
+{
+	std::string res = "";
+	int byte_1;
+	int byte_2;	
+    byte_1 = 208;
+	byte_2 = (int) hex_to_decimal(hex_token);
+	
+	if (byte_2 > 127)
+		byte_2-= 32;
+	
+	if (byte_2 > 191)
+	{
+		byte_1 = 209;
+		byte_2 -= 64;
+	}
+	res += (char)byte_1;
+	res += (char)byte_2;
+
 	return res;
 }
 

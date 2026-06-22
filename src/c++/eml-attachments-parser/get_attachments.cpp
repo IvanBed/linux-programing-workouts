@@ -39,8 +39,74 @@ struct RegexPatterns
 
 };
 
-void to_utf8(std::string &str)
+struct Charset
 {
+	charset_offset ISO_8859_5;
+	charset_offset Win_1251;
+    charset_offset KOI_8R;
+    charset_offset UNKNOWN;
+
+    Charset()
+    {
+	    ISO_8859_5 = {32, 64};
+	    Win_1251   = {48, 64};
+        KOI_8R     = {82, 82};
+        UNKNOWN    = {0, 0};        
+    } 
+};
+
+static std::string to_utf8_internal(std::string const &str, charset_offset const & offset)
+{
+    std::cout << "to_utf8_internal\n";
+    std::cout << "str " << str << "\n";
+    std::string utf8_str = "";
+	int64_t byte_1;
+	int64_t byte_2;	
+    
+	for (size_t i = 0; i < str.size(); i++)
+	{
+        byte_1 = FIRSTBYTE;
+		byte_2 = (int64_t)str[i];
+        std::cout << "1 byte_2: " << (int64_t)str[i] << "\n";
+		if (byte_2 > NO_OFFSET)
+			byte_2 -= offset.first;
+		else 
+        {
+            std::cout << "byte_2: " << byte_2 << "\n";
+            utf8_str += (char)byte_2;
+            return utf8_str;
+        }
+
+		if (byte_2 > FIRST_OFFSET)
+		{
+			byte_1 += 1;
+			byte_2 -= offset.second;
+		}
+        std::cout << "byte_1: " << (char)byte_1 << "\n";
+        std::cout << "byte_2: " << (char)byte_2 << "\n";
+		utf8_str += (char)byte_1;
+        utf8_str += (char)byte_2;
+
+	}
+	
+	return utf8_str;
+}
+
+static std::string to_utf8(std::string const & str, std::string const & charset)
+{
+    std::cout << "to_utf8\n";
+    std::string res = str;
+	Charset charset_vals;
+	if (charset == "ISO-8859-5")
+		return to_utf8_internal(str, charset_vals.ISO_8859_5);
+    
+	if (charset == "Windows-1251" || charset == "Win-1251" || charset == "win-1251" || charset == "windows-1251")
+		return to_utf8_internal(str, charset_vals.Win_1251);	
+	
+	if (charset == "KOI-8R")
+		return to_utf8_internal(str, charset_vals.KOI_8R);
+	
+	return res;
 
 }
 
@@ -79,6 +145,17 @@ static std::vector<std::string> split_line(std::string const & line, std::vector
 		res.push_back(std::move(val));
 
     return res;
+}
+
+static std::string check_unix_filename(std::string const & filename)
+{
+	std::string res = "";
+	for (size_t i = 0; i < filename.size(); i++)
+	{
+		
+		
+	}
+	return res;
 }
 
 static std::vector<std::string> encoded_words(std::string const & line, char separator)
@@ -132,18 +209,13 @@ static std::string get_decoded_text_rfc2047(std::string & token)
     std::string charset      = sub_tokens[0];
     std::string encoding     = sub_tokens[1];
     std::string encodedtext  = sub_tokens[2];
-    /*
+    
     std::cout << "---------------------------" << std::endl;
     std::cout << charset << std::endl;
     std::cout << encoding << std::endl;
 	std::cout << encodedtext << std::endl;
     std::cout << "---------------------------" << std::endl;
-	*/
-    if (charset == "utf-8")
-    {
-        to_utf8(encodedtext);
-    }
-
+	
     if (encoding == "B" || encoding == "b")
     {
         try
@@ -155,12 +227,16 @@ static std::string get_decoded_text_rfc2047(std::string & token)
             std::cerr << e.what() << '\n';
             decoded_text = "";
         }
+		
+		decoded_text = to_utf8(decoded_text, charset);
+			
     }
     else if (encoding == "Q" || encoding == "q")
     {
         decoded_text = quoted_printable(encodedtext, charset);
     }
-    
+	
+    std::cout << "decoded_text: " << decoded_text << std::endl;
     return decoded_text;
 }
 
@@ -218,10 +294,10 @@ static std::string get_decoded_text_rfc2231(std::string const & token)
 	std::cout << encodedtext << std::endl;   
 	*/
 	
-	if (charset == "utf-8")
+	/*if (charset == "utf-8")
     {
         to_utf8(encodedtext);
-    }
+    }*/
     
     decoded_text = url_decode(encodedtext);
 
@@ -502,7 +578,7 @@ int main(int argc, char *argv[])
                     default:
                         break;
                 }
-                std::cout << "attach_filename after encode: " << attach_filename << std::endl;
+                std::cout << "attach_filename after decode: " << attach_filename << std::endl;
                 if (!save_str_to_file(attach_filename, decoded_attachment_data))
 				{
 					std::cout << "Could not save the attachment!\n";
