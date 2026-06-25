@@ -79,7 +79,7 @@ bool find_substr(char const *str, char const *substr, size_t *offset)
     return found;    
     
 }
-// This func will crash on the file that contain last line without \namespace
+// This func will crash on the file that contain last line without \n 
 // must be amended
 bool read_line(FILE *fp, char *buf)
 {
@@ -92,6 +92,12 @@ bool read_line(FILE *fp, char *buf)
         { 
             buf[buf_index] = '\0';
             return true;
+        }    
+        
+        if (buf[buf_index] == EOT)
+        { 
+            buf[buf_index] = '\0';
+            return false;
         }    
     }
     return false;

@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-
 #define PAGE_SIZE 4096
 #define PATH_MAX  4096
 #define PPID_SIZE 1024
@@ -78,22 +77,28 @@ bool find_substr(char const *str, char const *substr, size_t *offset)
     }
 
     return found;
-
 }
 
 bool read_line(FILE *fp, char *buf)
 {
     size_t buf_index;
-    for (buf_index = 0; buf_index < PAGE_SIZE; buf_index++)
+    for (buf_index = 0; buf_index < PAGE_SIZE; buf_index++) 
     {
         buf[buf_index] = getc(fp);
-
+    
         if (buf[buf_index] == '\n')
-        {
+        { 
             buf[buf_index] = '\0';
             return true;
-        }
+        }    
+        
+        if (buf[buf_index] == EOF)
+        { 
+            buf[buf_index] = '\0';
+            return false;
+        }    
     }
+    
     return false;
 }
 
@@ -118,7 +123,7 @@ bool read_status_file(FILE *fp, char *ppid)
 bool custom_get_ppid(int pid, char *ppid)
 {
     char path[PATH_MAX];
-  bool result = false;
+    bool result = false;
     sprintf(path, "/proc/%d/status", pid);
 
     FILE *fp = fopen(path, "r");

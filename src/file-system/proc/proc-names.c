@@ -80,7 +80,6 @@ bool find_substr(char const *str, char const *substr, size_t *offset)
     }
 
     return found;    
-    
 }
 
 bool read_line(FILE *fp, char *buf)
@@ -94,6 +93,12 @@ bool read_line(FILE *fp, char *buf)
         { 
             buf[buf_index] = '\0';
             return true;
+        }    
+        
+        if (buf[buf_index] == EOF)
+        { 
+            buf[buf_index] = '\0';
+            return false;
         }    
     }
     
