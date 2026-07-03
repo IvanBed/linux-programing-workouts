@@ -1,6 +1,12 @@
 #include "base16.hpp"
 #include <iostream>
 
+struct charset_offset
+{
+	int first;
+	int second;
+};
+
 struct Charset
 {
 	charset_offset ISO_8859_5;
@@ -152,28 +158,6 @@ static std::string decode_hex(std::string const & hex_token, charset_offset cons
 	res += (char)byte_1;
     res += (char)byte_2;
 	
-	return res;
-}
-
-std::string decode_hex_latin_five(std::string const & hex_token)
-{
-	std::string res = "";
-	int byte_1;
-	int byte_2;	
-    byte_1 = 208;
-	byte_2 = (int) hex_to_decimal(hex_token);
-	
-	if (byte_2 > 127)
-		byte_2-= 32;
-	
-	if (byte_2 > 191)
-	{
-		byte_1 = 209;
-		byte_2 -= 64;
-	}
-	res += (char)byte_1;
-	res += (char)byte_2;
-
 	return res;
 }
 

@@ -9,11 +9,6 @@
 
 #define FIRSTBYTE    208
 
-struct charset_offset
-{
-	int first;
-	int second;
-};
 
 std::string quoted_printable(std::string const &, std::string const &);
 

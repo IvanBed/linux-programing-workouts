@@ -1,6 +1,11 @@
 #include "get_attachments.hpp"
 #include <fcntl.h>
 #include <unistd.h>
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 // TO DO 
 // Добавить:
 // Проверку charset
@@ -35,7 +40,6 @@ struct RegexPatterns
 							   filemd_pattern(FILEMD_PATTERN, std::regex_constants::icase), filerd_pattern(FILERD_PATTERN, std::regex_constants::icase),
 							   anti_virus_pattern(ANTIVIRUS_PATTERN, std::regex_constants::icase), hint2047(RFC2047HINT), hint2231(RFC2231HINT)
     {}
-    
 
 };
 
@@ -60,21 +64,21 @@ static std::string to_utf8_internal(std::string const &str, charset_offset const
     std::cout << "to_utf8_internal\n";
     std::cout << "str " << str << "\n";
     std::string utf8_str = "";
-	int64_t byte_1;
-	int64_t byte_2;	
+	uint8_t byte_1;
+	uint8_t byte_2;	
     
 	for (size_t i = 0; i < str.size(); i++)
 	{
         byte_1 = FIRSTBYTE;
-		byte_2 = (int64_t)str[i];
-        std::cout << "1 byte_2: " << (int64_t)str[i] << "\n";
+		byte_2 = (uint8_t)(str.c_str())[i];
+        std::cout << "1 byte_2: " << (uint8_t)(str.c_str())[i] << "\n";
 		if (byte_2 > NO_OFFSET)
 			byte_2 -= offset.first;
 		else 
         {
             std::cout << "byte_2: " << byte_2 << "\n";
             utf8_str += (char)byte_2;
-            return utf8_str;
+            continue;
         }
 
 		if (byte_2 > FIRST_OFFSET)
@@ -96,6 +100,7 @@ static std::string to_utf8(std::string const & str, std::string const & charset)
 {
     std::cout << "to_utf8\n";
     std::string res = str;
+
 	Charset charset_vals;
 	if (charset == "ISO-8859-5")
 		return to_utf8_internal(str, charset_vals.ISO_8859_5);
@@ -103,11 +108,10 @@ static std::string to_utf8(std::string const & str, std::string const & charset)
 	if (charset == "Windows-1251" || charset == "Win-1251" || charset == "win-1251" || charset == "windows-1251")
 		return to_utf8_internal(str, charset_vals.Win_1251);	
 	
-	if (charset == "KOI-8R")
+	if (charset == "KOI-8R" || charset == "koi8-r")
 		return to_utf8_internal(str, charset_vals.KOI_8R);
 	
 	return res;
-
 }
 
 static bool contain(std::vector<char> const & vect, char ch)
@@ -128,7 +132,6 @@ static std::vector<std::string> split_line(std::string const & line, std::vector
     {
         if(!contain(separators, line[i])) 
         {
-           
 			val += line[i];
 			std::cout << "subtoken: " << val << " ";
         }
@@ -198,12 +201,35 @@ static std::vector<std::string> encoded_words_new(std::string const & line, char
     return res;
 }
 
+std::vector<uint8_t> get_vect(std::string const & str)
+{
+    std::vector<uint8_t> res;
+    for (size_t i = 0; i < str.size(); i++)
+    {
+        res.push_back((uint8_t)str[i]);
+
+    }
+    return res;
+}
+
+void print_vector(std::vector<uint8_t>  v)
+{
+    for (size_t i = 0; i < v.size(); i++)
+    {
+        printf("%d ", v[i]);
+
+    }
+    std::cout << std::endl;
+}
+
 static std::string get_decoded_text_rfc2047(std::string & token)
 {
     // Удаление обрамляющих =? для удобства разбиения
     std::string prepared_token = token.substr(2, token.size() - 4);
     
     std::string decoded_text = "";
+    std::vector<uint8_t> decoded_bytes;
+
     std::vector<std::string> sub_tokens = encoded_words(prepared_token, '?');
     
     std::string charset      = sub_tokens[0];
@@ -215,20 +241,23 @@ static std::string get_decoded_text_rfc2047(std::string & token)
     std::cout << encoding << std::endl;
 	std::cout << encodedtext << std::endl;
     std::cout << "---------------------------" << std::endl;
-	
+
     if (encoding == "B" || encoding == "b")
     {
         try
         {
-            decoded_text = base64::from_base64(encodedtext);             
+            decoded_text = base64::from_base64(encodedtext);  
+            //decoded_bytes = base64_decode_to_bytes(encodedtext);          
         }
         catch(const std::exception& e)
         {
             std::cerr << e.what() << '\n';
             decoded_text = "";
         }
-		
-		decoded_text = to_utf8(decoded_text, charset);
+
+        std::vector<uint8_t> dt = get_vect(decoded_text);
+        print_vector(dt);
+		decoded_text = raw_bytes_to_utf8(dt, charset);
 			
     }
     else if (encoding == "Q" || encoding == "q")
