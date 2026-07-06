@@ -1,5 +1,4 @@
 #include "mem_cache.h"
-#define SLAB_CHUNKS 5 
 
 size_t calculate_slab_size(size_t slab_order)
 {
@@ -8,17 +7,17 @@ size_t calculate_slab_size(size_t slab_order)
     size_t slab_size;
 
     base = 2;
-    
+
     if (slab_order != 0)
     {
         exp = base << (slab_order - 1);
     }
-    else 
+    else
     {
-        exp = 1;    
+        exp = 1;
     }
-    slab_size = exp * PAGESIZE;
-    
+    slab_size = exp * PAGE_SIZE;
+
     return slab_size;
 }
 
@@ -30,13 +29,13 @@ static size_t get_slab_order(size_t object_size, size_t default_cnt)
 
     base  = 2;
     order = 0;
-    total_size = (object_size + sizeof(struct chunk)) * default_cnt + sizeof(struct slab);
-    
-    if (PAGESIZE >= total_size)
+    total_size = (object_size + sizeof(struct block)) * default_cnt + sizeof(struct slab);
+
+    if (PAGE_SIZE >= total_size)
         return order;
-    
+
     order++;
-    while (PAGESIZE * base < total_size && order < 10)
+    while (PAGE_SIZE * base < total_size && order < 10)
     {
         order++;
         base <<= 1;
@@ -47,64 +46,77 @@ static size_t get_slab_order(size_t object_size, size_t default_cnt)
 
 static size_t calculate_object_cnt(size_t slab_size, size_t object_size)
 {
-    size_t work_are_size = slab_size - sizeof(struct slab);
-    size_t chunk_size    = object_size + sizeof(struct chunk);
+    size_t new_cnt = 0;
     
-    size_t new_cnt = work_are_size / chunk_size;
+    size_t work_are_size = slab_size - sizeof(struct slab);
+    size_t block_size    = object_size + sizeof(struct block);
+    
+    if (block_size != 0)
+        new_cnt = work_are_size / block_size;
+
     return new_cnt;
 }
 
 void cache_setup(struct cache *cache, size_t object_size)
 {
-    if (!cache)
-    {
+    slab_list_init(&(cache->slabs_free));
+    slab_list_init(&(cache->slabs_partial));
+    slab_list_init(&(cache->slabs_full));
 
-    }
-
-    slab_list_init(&(cache->free_slabs));
-    slab_list_init(&(cache->partially_filled_slabs));
-    slab_list_init(&(cache->filled_slabs));
- 
     cache->object_size  = object_size;
     cache->slab_order   = get_slab_order(object_size, DEFAULT_SIZE);
     cache->slab_size    = calculate_slab_size(cache->slab_order);
-    
-    if (cache->slab_size < cache->object_size)
-    {
-        return;
-    }
-    
     cache->slab_objects = calculate_object_cnt(cache->slab_size, object_size);
 }
 
 void cache_release(struct cache *cache)
 {
-    /* Реализуйте эту функцию. */
+    if (cache == NULL)
+    {
+        printf("Memory cache pointer is null\n");
+        return;
+    }
+    slab_list_free(&(cache->slabs_free));
+    slab_list_free(&(cache->slabs_partial));
+    slab_list_free(&(cache->slabs_full));    
 }
-
 
 void *cache_alloc(struct cache *cache)
 {
-    if (!cache)
-    {
-        return;
-    }
+    assert(cache != NULL);
     
+    void *mem  = NULL;
+    slab *slab = NULL;
+    if (cache->slabs_free.size > 0)
+    {
+        slab = cache->slabs_free.head;
+        mem = alloc_block(slab);
 
-    void *mem = NULL;
-    if (cache->partially_filled_slabs.size == 0)
-    {
-        slab *slab = create_slab(cache->object_size, cache->slab_order, cache->slab_objects);
-        add_to_list(&(cache->partially_filled_slabs), slab);
-        mem = alloc_chunk(slab);
-    }
-    else if (cache->partially_filled_slabs.size > 0)
-    {
-        slab *slab = cache->partially_filled_slabs.head;
-        mem = alloc_chunk(slab);
-        if (is_full(cache, slab))
+        if (slab_is_full(slab))
         {
-            slab_reposition(&cache->partially_filled_slabs, &cache->filled_slabs, slab);
+            slab_reposition(&cache->slabs_free, &cache->slabs_full, slab);
+        }
+        else
+        {
+            slab_reposition(&cache->slabs_free, &cache->slabs_partial, slab);
+        }
+    }
+    else
+    {
+        if (cache->slabs_partial.size == 0)
+        {
+            slab = create_slab(cache->object_size, cache->slab_order, cache->slab_objects);
+            add_to_list(&(cache->slabs_partial), slab);
+
+        }
+        else if (cache->slabs_partial.size > 0)
+        {
+            slab = cache->slabs_partial.head;
+        }
+        mem = alloc_block(slab);
+        if (slab_is_full(slab))
+        {
+            slab_reposition(&cache->slabs_partial, &cache->slabs_full, slab);
         }
     }
     return mem;
@@ -112,42 +124,50 @@ void *cache_alloc(struct cache *cache)
 
 void cache_free(struct cache *cache, void *ptr)
 {
-    if (!cache)
+    if (cache == NULL)
     {
+        printf("Memory cache pointer is null\n");
         return;
     }
 
-    if (!ptr)
+    if (cache == NULL)
     {
+        printf("Data pointer is null\n");
         return;
-    }    
-    
-    chunk      *chunk = (struct chunk*)((char*)ptr - sizeof(struct chunk));
-    slab       *slab  = (struct slab*)chunk->slab_ptr;
-    slab_list  *list  = (struct slab_list*)slab->list_ptr;
-    
-    /*printf("chunk %ld\n", chunk);
-    printf("slab %ld\n", slab);
-    printf("list %ld\n", list);
-    */
-    free_chunk(slab, chunk);
-    
-    if (slab->blck_cnt = 0)
-    {
-        //puts("cache_free 1");
-        slab_reposition(list, &cache->free_slabs, slab);
     }
-    else 
+    
+    block      *block = (struct block*)((char*)ptr - sizeof(struct block));
+    slab       *slab  = (struct slab*)block->slab_ptr;
+    slab_list  *list  = (struct slab_list*)slab->list_ptr;
+
+    free_block(slab, block);
+
+    if (slab->size == 0)
     {
-        slab_reposition(list, &cache->partially_filled_slabs, slab);
+        slab_reposition(list, &cache->slabs_free, slab);
+    }
+    else
+    {
+        slab_reposition(list, &cache->slabs_partial, slab);
     }
 }
 
 void cache_shrink(struct cache *cache)
 {
-    /* Реализуйте эту функцию. */
-    if (!cache)
+    if (cache == NULL)
     {
+        printf("Memory cache pointer is null\n");
         return;
+    }
+    slab_list_free(&cache->slabs_free);
+}
+
+void test_slabs_list(slab_list *list)
+{
+    slab *slab = list->head;
+    while(slab)
+    {
+        printf("%ld \n",  slab);
+        slab = slab->prev_slab;
     }
 }
