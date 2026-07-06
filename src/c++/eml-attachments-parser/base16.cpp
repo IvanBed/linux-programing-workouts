@@ -1,12 +1,6 @@
 #include "base16.hpp"
 #include <iostream>
 
-struct charset_offset
-{
-	int first;
-	int second;
-};
-
 struct Charset
 {
 	charset_offset ISO_8859_5;
@@ -132,47 +126,14 @@ static int64_t hex_to_decimal(std::string const & hex_num)
     return res_num;
 }
 
-static std::string decode_hex(std::string const & hex_token, charset_offset const & offset)
+static void print_vector(std::vector<uint8_t>  v)
 {
-	std::string res = "";
-	int64_t byte_1;
-	int64_t byte_2;	
-    byte_1 = FIRSTBYTE;
-	byte_2 = (int64_t) hex_to_decimal(hex_token);
-	
-	if (byte_2 > NO_OFFSET)
+    for (size_t i = 0; i < v.size(); i++)
     {
-        byte_2-= offset.first;
-    }
-	else 
-    {
-        res += (char)byte_2;
-        return res;
-    }
+        printf("%d ", v[i]);
 
-	if (byte_2 > FIRST_OFFSET)
-	{
-		byte_1 += 1;
-		byte_2 -= offset.second;
-	}
-	res += (char)byte_1;
-    res += (char)byte_2;
-	
-	return res;
-}
-
-static std::string decode_hex_with_charset(std::string const & hex_token, std::string const & charset, Charset const & charset_vals)
-{
-    if (charset == "ISO-8859-5")
-		return decode_hex(hex_token, charset_vals.ISO_8859_5);
-    
-	if (charset == "Windows-1251" || charset == "Win-1251")
-		return decode_hex(hex_token, charset_vals.Win_1251);	
-	
-	//if (charset == "KOI-8R")
-	//	return decode_hex(hex_token, charset_vals.KOI_8R);
-	
-	return std::to_string(hex_to_decimal(hex_token));
+    }
+    std::cout << std::endl;
 }
 
 std::string quoted_printable(std::string const & str, std::string const & charset)
@@ -180,17 +141,25 @@ std::string quoted_printable(std::string const & str, std::string const & charse
     std::string hex_token = "";
     std::string res       = "";	
 	
-	Charset charset_vals;
-	//std::cout << str << std::endl;
-	//std::cout << charset << std::endl;
+    std::vector<uint8_t> hex_token_vector;
 	
     for (size_t i = 0; i < str.size(); i++)
     {
         if (str[i] == '=')
         {
 			hex_token = str.substr(i + 1, 2);
-			res += decode_hex_with_charset(hex_token, charset, charset_vals);
-			i += 2;
+
+            hex_token_vector.push_back(hex_to_decimal(hex_token));
+            
+            print_vector(hex_token_vector);
+
+			res += raw_bytes_to_utf8(hex_token_vector, charset);
+            
+            if (is_hex_char(hex_token[0]))
+			    i += 2;
+            else 
+                i += 1;
+            hex_token_vector.clear();
 		}
 		else 
 		{

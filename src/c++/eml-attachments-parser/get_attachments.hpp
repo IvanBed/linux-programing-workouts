@@ -13,8 +13,6 @@
     #include "base64.hpp"
     #include "base16.hpp"
 
-    #include "charset_decoder.hpp"
-    #include "base64_to_bytes.hpp"
 
     #define BOUNDARY_PATTERN "boundary=\"*"
 

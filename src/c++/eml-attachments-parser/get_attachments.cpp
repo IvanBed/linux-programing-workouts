@@ -59,61 +59,6 @@ struct Charset
     } 
 };
 
-static std::string to_utf8_internal(std::string const &str, charset_offset const & offset)
-{
-    std::cout << "to_utf8_internal\n";
-    std::cout << "str " << str << "\n";
-    std::string utf8_str = "";
-	uint8_t byte_1;
-	uint8_t byte_2;	
-    
-	for (size_t i = 0; i < str.size(); i++)
-	{
-        byte_1 = FIRSTBYTE;
-		byte_2 = (uint8_t)(str.c_str())[i];
-        std::cout << "1 byte_2: " << (uint8_t)(str.c_str())[i] << "\n";
-		if (byte_2 > NO_OFFSET)
-			byte_2 -= offset.first;
-		else 
-        {
-            std::cout << "byte_2: " << byte_2 << "\n";
-            utf8_str += (char)byte_2;
-            continue;
-        }
-
-		if (byte_2 > FIRST_OFFSET)
-		{
-			byte_1 += 1;
-			byte_2 -= offset.second;
-		}
-        std::cout << "byte_1: " << (char)byte_1 << "\n";
-        std::cout << "byte_2: " << (char)byte_2 << "\n";
-		utf8_str += (char)byte_1;
-        utf8_str += (char)byte_2;
-
-	}
-	
-	return utf8_str;
-}
-
-static std::string to_utf8(std::string const & str, std::string const & charset)
-{
-    std::cout << "to_utf8\n";
-    std::string res = str;
-
-	Charset charset_vals;
-	if (charset == "ISO-8859-5")
-		return to_utf8_internal(str, charset_vals.ISO_8859_5);
-    
-	if (charset == "Windows-1251" || charset == "Win-1251" || charset == "win-1251" || charset == "windows-1251")
-		return to_utf8_internal(str, charset_vals.Win_1251);	
-	
-	if (charset == "KOI-8R" || charset == "koi8-r")
-		return to_utf8_internal(str, charset_vals.KOI_8R);
-	
-	return res;
-}
-
 static bool contain(std::vector<char> const & vect, char ch)
 {
     auto result{std::find(begin(vect), std::end(vect), ch)};
@@ -207,7 +152,6 @@ std::vector<uint8_t> get_vect(std::string const & str)
     for (size_t i = 0; i < str.size(); i++)
     {
         res.push_back((uint8_t)str[i]);
-
     }
     return res;
 }
@@ -246,8 +190,7 @@ static std::string get_decoded_text_rfc2047(std::string & token)
     {
         try
         {
-            decoded_text = base64::from_base64(encodedtext);  
-            //decoded_bytes = base64_decode_to_bytes(encodedtext);          
+            decoded_text = base64::from_base64(encodedtext);         
         }
         catch(const std::exception& e)
         {
@@ -257,6 +200,7 @@ static std::string get_decoded_text_rfc2047(std::string & token)
 
         std::vector<uint8_t> dt = get_vect(decoded_text);
         print_vector(dt);
+
 		decoded_text = raw_bytes_to_utf8(dt, charset);
 			
     }

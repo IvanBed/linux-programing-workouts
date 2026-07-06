@@ -4,10 +4,9 @@
 #include <cctype>
 #include <string>
 
-#define NO_OFFSET    127
-#define FIRST_OFFSET 191
+#include "charset_decoder.hpp"
 
-#define FIRSTBYTE    208
+#define FIRST_OFFSET 191
 
 
 std::string quoted_printable(std::string const &, std::string const &);
