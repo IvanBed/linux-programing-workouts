@@ -10,9 +10,9 @@
     #include <iomanip>
     #include <cerrno>
 
+    #include "base64_to_bytes.hpp"
     #include "base64.hpp"
     #include "base16.hpp"
-
 
     #define BOUNDARY_PATTERN "boundary=\"*"
 

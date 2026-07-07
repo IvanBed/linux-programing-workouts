@@ -158,6 +158,7 @@ std::vector<uint8_t> get_vect(std::string const & str)
 
 void print_vector(std::vector<uint8_t>  v)
 {
+    std::cout << "print_vector\n";
     for (size_t i = 0; i < v.size(); i++)
     {
         printf("%d ", v[i]);
@@ -190,18 +191,17 @@ static std::string get_decoded_text_rfc2047(std::string & token)
     {
         try
         {
-            decoded_text = base64::from_base64(encodedtext);         
+            decoded_bytes = base64_decode_to_bytes(encodedtext);         
         }
         catch(const std::exception& e)
         {
             std::cerr << e.what() << '\n';
-            decoded_text = "";
+            //decoded_text = "";
         }
 
-        std::vector<uint8_t> dt = get_vect(decoded_text);
-        print_vector(dt);
-
-		decoded_text = raw_bytes_to_utf8(dt, charset);
+        //std::vector<uint8_t> dt = get_vect(decoded_text);
+        print_vector(decoded_bytes);
+		decoded_text = raw_bytes_to_utf8(decoded_bytes, charset);
 			
     }
     else if (encoding == "Q" || encoding == "q")
@@ -261,17 +261,10 @@ static std::string get_decoded_text_rfc2231(std::string const & token)
     std::string lang        = sub_tokens[1];
     std::string encodedtext = sub_tokens[2];
     
-	/*
 	std::cout << charset << std::endl;
     std::cout << lang << std::endl;
 	std::cout << encodedtext << std::endl;   
-	*/
 	
-	/*if (charset == "utf-8")
-    {
-        to_utf8(encodedtext);
-    }*/
-    
     decoded_text = url_decode(encodedtext);
 
     return decoded_text;
@@ -444,6 +437,10 @@ int main(int argc, char *argv[])
         return 1;
     }
     
+    std::cout << "eml file name " << eml_filename << "\n";
+
+    build_decoding_table();
+
     std::string line;
 
     std::regex bound_pattern(BOUNDARY_PATTERN);
@@ -464,7 +461,7 @@ int main(int argc, char *argv[])
     
     std::string cur_filename  = "";
     std::vector<std::string> filename_tokens;
-
+   
 
     size_t attachments_cnt = 0;
     while (getline(eml_file, line))
@@ -525,7 +522,7 @@ int main(int argc, char *argv[])
 				//std::cout << "attachment DATA: "<< attachment_data << "\n";
                 try
                 {
-                    decoded_attachment_data = base64::from_base64(attachment_data);  
+                    decoded_attachment_data = base64_decode_to_string(attachment_data);  
                 }
                 catch(const std::exception& e)
                 {
@@ -535,7 +532,8 @@ int main(int argc, char *argv[])
 
                 //Из токенов файлов собираем название файла и декодируем его в зависимости от кодировки
                 attach_filename = get_attach_filename(filename_tokens);
-                std::cout << "attach_filename: " << attach_filename << std::endl;
+                std::cout << "attach_filename 111: " << attach_filename << std::endl;
+                //std::cout << "decoded_attachment_data: " << decoded_attachment_data << std::endl;
 				if (attach_filename.empty())
 					attach_filename = "temp" + std::to_string(attachments_cnt);
 				
@@ -577,5 +575,6 @@ int main(int argc, char *argv[])
     }
 	std::cout << "Total attachments found: " << attachments_cnt << std::endl;
 	
+    base64_cleanup();
     eml_file.close();
 }

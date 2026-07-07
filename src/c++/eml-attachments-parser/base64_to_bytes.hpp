@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cstdint>
 #include <vector>
-
+#include <cstring>
 static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
                                 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
                                 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
@@ -19,6 +19,9 @@ static int mod_table[] = {0, 2, 1};
 
 
 std::vector<uint8_t> base64_decode_to_bytes(std::string const &); 
-unsigned char *base64_decode(const char *, size_t, size_t *); 
+std::string base64_decode_to_string(std::string const &);
 
+void build_decoding_table(); 
+
+void base64_cleanup(); 
 #endif
