@@ -14,6 +14,17 @@
 
 std::string quoted_printable(std::string const &);
 
+struct RegexPatternsBase
+{
+    std::regex filename_pattern;
+	std::regex anti_virus_pattern;
+	
+    explicit RegexPatternsBase() : filename_pattern(FILENAME_PATTERN, std::regex_constants::icase),
+							   anti_virus_pattern(ANTIVIRUS_PATTERN, std::regex_constants::icase)
+    {}
+
+};
+
 struct RegexPatterns
 {
     std::regex id_pattern;
@@ -30,7 +41,6 @@ struct RegexPatterns
 	std::regex filerd_pattern;
 	
 	std::regex anti_virus_pattern;
-	
     std::regex hint2047;
     std::regex hint2231;
     
@@ -41,6 +51,61 @@ struct RegexPatterns
 							   anti_virus_pattern(ANTIVIRUS_PATTERN, std::regex_constants::icase), hint2047(RFC2047HINT), hint2231(RFC2231HINT)
     {}
 
+};
+
+struct HeaderPatterns
+{
+    std::string id_pattern;
+    std::string encoding_pattern;
+    std::string description_pattern;
+    
+    std::string type_pattern;
+	std::string attach_pattern;
+    std::string filesize_pattern;
+	
+	std::string filecd_pattern;
+	std::string filemd_pattern;
+	std::string filerd_pattern;
+
+    RegexPatternsBase regex_patterns;
+
+    explicit HeaderPatterns() : id_pattern(ID_PATTERN_F), encoding_pattern(ENCODING_PATTERN_F), description_pattern(DESCRIPTION_PATTERN_F), 
+							   type_pattern(TYPE_PATTERN_F), attach_pattern(ATTACH_PATTERN_F), 
+							   filesize_pattern(FILESIZE_PATTERN_F), filecd_pattern(FILECD_PATTERN_F),
+							   filemd_pattern(FILEMD_PATTERN_F), filerd_pattern(FILERD_PATTERN_F)
+    {}
+
+    bool is_header_find(std::string const & line)
+    {
+        if (line.find(id_pattern) != std::string::npos || line.find(encoding_pattern) != std::string::npos 
+           || line.find(description_pattern) != std::string::npos || line.find(type_pattern) != std::string::npos
+           || line.find(attach_pattern) != std::string::npos || line.find(filesize_pattern) != std::string::npos
+           || line.find(filecd_pattern) != std::string::npos || line.find(filemd_pattern) != std::string::npos || line.find(filerd_pattern) != std::string::npos) 
+        {
+            return true;
+        }
+        else 
+        {
+            return false;
+        }  
+    }
+
+    bool is_header_regex(std::string const & line)
+    {
+        if (regex_search(line, regex_patterns.filename_pattern) || regex_search(line, regex_patterns.anti_virus_pattern)) 
+        {
+            return true;
+        }
+        else 
+        {
+            return false;
+        }  
+    }
+
+    bool is_header(std::string const & line)
+    {
+        return is_header_find(line) || is_header_regex(line);
+    }
 };
 
 struct Charset
@@ -405,7 +470,7 @@ static bool header_key(std::string const & line, RegexPatterns const & patterns)
     if (regex_search(line, patterns.id_pattern) || regex_search(line, patterns.attach_pattern) || regex_search(line, patterns.encoding_pattern) 
         || regex_search(line, patterns.description_pattern) || regex_search(line, patterns.type_pattern) || regex_search(line, patterns.filename_pattern) 
 	        ||  regex_search(line, patterns.filesize_pattern) ||  regex_search(line, patterns.filecd_pattern)
-			 ||  regex_search(line, patterns.filemd_pattern) ||  regex_search(line, patterns.filerd_pattern) || regex_search(line, patterns.anti_virus_pattern) )
+			 ||  regex_search(line, patterns.filemd_pattern) ||  regex_search(line, patterns.filerd_pattern) || regex_search(line, patterns.anti_virus_pattern)) 
     {
         return true;
     }
@@ -447,7 +512,8 @@ int main(int argc, char *argv[])
     std::regex attach_pattern(ATTACH_PATTERN);
     std::regex filename_pattern(FILENAME_PATTERN);
 
-    RegexPatterns patterns;
+    RegexPatterns  patterns;
+    HeaderPatterns header_patterns;
 
     std::string attach_filename = "";
 
@@ -470,11 +536,11 @@ int main(int argc, char *argv[])
         
         // Аккумуляция имени файла вложения на случай если значение этого имени располагается на нескольких строчках eml файла
         // Условия, если запущен процесс аккумуляции имени файла, текующая строка не пустая и не является токеном хедера или началом вложения
-        if (!empty_line(line) && filename_parsing_starts && !header_key(line, patterns) && !attach_body_start_found)
+        if (!empty_line(line) && filename_parsing_starts && !header_patterns.is_header(line) /*!header_key(line, patterns)*/ && !attach_body_start_found)
         {
 			cur_filename += line;
         }
-        else if (filename_parsing_starts && (empty_line(line)  || header_key(line, patterns) || attach_body_start_found))
+        else if (filename_parsing_starts && (empty_line(line) || header_patterns.is_header(line) /*header_key(line, patterns)  */|| attach_body_start_found))
         {
             std::string filename = get_filename_val(cur_filename);
             //std::cout << "filename: "<< filename << "\n";

@@ -22,7 +22,8 @@
 	#define FILENAME_PATTERN "filename*|FileName*|FILENAME*"
 	
 	#define ANTIVIRUS_PATTERN "AntiVirus.*Status.*"
-	#define FILESIZE_PATTERN "size=*"
+	
+    #define FILESIZE_PATTERN "size=*"
 	
 	#define FILECD_PATTERN "creation-date=*"
 	#define FILEMD_PATTERN "modification-date=*"
@@ -32,11 +33,29 @@
     #define ID_PATTERN "Content-ID:*"
     #define TYPE_PATTERN "Content-Type:*"
     #define DESCRIPTION_PATTERN "Content-Description:*"
+    
+    
     #define RFC2047HINT "=\?.*\?="
     #define RFC2231HINT ".*'.*'.*"
 
     #define RFC2047     "=\?([^?]+)\?([QBqb])\?([^?]+)\?="
     #define RFC2231     ""
+
+    
+    #define ATTACH_PATTERN_F "Content-Disposition: attachment"
+	#define FILECD_PATTERN_F "creation-date="
+	#define FILEMD_PATTERN_F "modification-date="
+	
+    #define FILERD_PATTERN_F "read-date="
+	#define FILESIZE_PATTERN_F "size="
+	#define ENCODING_PATTERN_F "Content-Transfer-Encoding:"
+    
+    #define ID_PATTERN_F "Content-ID:"
+    #define TYPE_PATTERN_F "Content-Type:"
+    #define DESCRIPTION_PATTERN_F "Content-Description:"
+
+
+
 
     // TO DO 
     // Добавить:
