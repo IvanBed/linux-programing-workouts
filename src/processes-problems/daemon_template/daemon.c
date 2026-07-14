@@ -1,6 +1,13 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdio.h>
+#include <signal.h>
+
+void signal_handler(int signal_num)
+{
+    exit(1);
+}
 
 void start_deamon()
 {
@@ -39,6 +46,8 @@ void start_deamon()
 
 int main(int argc, char *argv[])
 {
+    signal(SIGURG, signal_handler);
+    
     start_deamon();
     while(1)
     {
