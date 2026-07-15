@@ -108,7 +108,7 @@ struct HeaderPatterns
     }
 };
 
-struct Charset
+/*struct Charset
 {
 	charset_offset ISO_8859_5;
 	charset_offset Win_1251;
@@ -122,7 +122,7 @@ struct Charset
         KOI_8R     = {82, 82};
         UNKNOWN    = {0, 0};        
     } 
-};
+};*/
 
 static bool contain(std::vector<char> const & vect, char ch)
 {
@@ -528,7 +528,6 @@ int main(int argc, char *argv[])
     std::string cur_filename  = "";
     std::vector<std::string> filename_tokens;
    
-
     size_t attachments_cnt = 0;
     while (getline(eml_file, line))
     {
