@@ -151,7 +151,7 @@ std::string quoted_printable(std::string const & str, std::string const & charse
 
             hex_token_vector.push_back(hex_to_decimal(hex_token));
             
-            print_vector(hex_token_vector);
+            //print_vector(hex_token_vector);
 
 			res += raw_bytes_to_utf8(hex_token_vector, charset);
             

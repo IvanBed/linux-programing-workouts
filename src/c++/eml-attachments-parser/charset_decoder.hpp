@@ -7,10 +7,9 @@
 
 #define OFFSET    128
 #define NO_OFFSET    191
-
 #define FIRSTBYTE    208
 
-static unsigned char utf8[128][3] = {
+static uint8_t utf8[128][3] = {
     {226, 148, 128},
     {226, 148, 130},
     {226, 148, 140},
@@ -158,11 +157,11 @@ static unsigned char utf8[128][3] = {
 
 struct charset_offset
 {
-	int first;
-	int second;
+	uint8_t first;
+	uint8_t second;
 };
 
 std::string raw_bytes_to_utf8(std::vector<uint8_t> const &, std::string const &);
-std::string string_to_utf8(std::string const &, std::string const &);
+//std::string string_to_utf8(std::string const &, std::string const &);
 std::vector<uint8_t> get_vect(std::string const &);
 #endif

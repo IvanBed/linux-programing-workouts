@@ -72,7 +72,6 @@ static std::string raw_bytes_8859_5_to_utf8(std::vector<uint8_t> const & bytes, 
         return utf8_str;
     }
 
-
     uint8_t byte_1;
 	uint8_t byte_2;	
 	uint8_t byte_3;
@@ -140,7 +139,7 @@ static std::string  raw_bytes_koi_8r_to_utf8(std::vector<uint8_t> const & bytes)
 	return utf8_str;
 }
 
-std::string vect_to_string(std::vector<uint8_t> const & bytes)
+static std::string vect_to_string(std::vector<uint8_t> const & bytes)
 {
     std::string utf8_str = "";
     for (size_t i = 0; i < bytes.size(); i++)

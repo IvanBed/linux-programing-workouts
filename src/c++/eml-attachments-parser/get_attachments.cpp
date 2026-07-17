@@ -171,7 +171,7 @@ static std::string check_unix_filename(std::string const & filename)
 	return res;
 }
 
-static std::vector<std::string> encoded_words(std::string const & line, char separator)
+static std::vector<std::string> get_encoded_line_tokens(std::string const & line, char separator)
 {
     std::vector<std::string> res(3, "");
     std::string val = "";
@@ -193,7 +193,7 @@ static std::vector<std::string> encoded_words(std::string const & line, char sep
     return res;
 }
 
-static std::vector<std::string> encoded_words_new(std::string const & line, char separator)
+static std::vector<std::string> get_encoded_line_tokens_new(std::string const & line, char separator)
 {   
     std::vector<std::string> res(3, "");
     std::string val = "";
@@ -240,7 +240,7 @@ static std::string get_decoded_text_rfc2047(std::string & token)
     std::string decoded_text = "";
     std::vector<uint8_t> decoded_bytes;
 
-    std::vector<std::string> sub_tokens = encoded_words(prepared_token, '?');
+    std::vector<std::string> sub_tokens = get_encoded_line_tokens(prepared_token, '?');
     
     std::string charset      = sub_tokens[0];
     std::string encoding     = sub_tokens[1];
@@ -320,7 +320,7 @@ static std::string url_decode(std::string const &str)
 static std::string get_decoded_text_rfc2231(std::string const & token)
 {
     std::string decoded_text = "";
-    std::vector<std::string> sub_tokens = encoded_words(token, '\'');
+    std::vector<std::string> sub_tokens = get_encoded_line_tokens(token, '\'');
 
     std::string charset     = sub_tokens[0];
     std::string lang        = sub_tokens[1];
@@ -480,6 +480,21 @@ static bool header_key(std::string const & line, RegexPatterns const & patterns)
     }  
 }
 
+static bool contain_any_boundary(std::vector<std::string> boundaries, std::string const & line)
+{
+    bool res = false;
+    
+    for(size_t i = 0; i < boundaries.size(); i++)
+    {
+        if (line.find(boundaries[i]) != std::string::npos)
+        {
+            res = true;
+            break;
+        }
+    }
+    return res;
+}
+
 //Добавить парсинг кодировки Content-Transfer-Encoding для вложения
 int main(int argc, char *argv[])
 {
@@ -522,9 +537,11 @@ int main(int argc, char *argv[])
     bool filename_parsing_starts = false;
 
     std::string attachment_data  = "";
-    std::string cur_boundary     = "";
     std::string decoded_attachment_data;
     
+    //std::string cur_boundary     = "";
+    std::vector<std::string> boundaries;
+
     std::string cur_filename  = "";
     std::vector<std::string> filename_tokens;
    
@@ -542,7 +559,7 @@ int main(int argc, char *argv[])
         else if (filename_parsing_starts && (empty_line(line) || header_patterns.is_header(line) /*header_key(line, patterns)  */|| attach_body_start_found))
         {
             std::string filename = get_filename_val(cur_filename);
-            //std::cout << "filename: "<< filename << "\n";
+            std::cout << "filename: "<< filename << "\n";
             filename_tokens.push_back(filename);
             filename_parsing_starts = false;
             cur_filename = "";
@@ -562,25 +579,27 @@ int main(int argc, char *argv[])
         // Сохранение актуального значения границы
         if (regex_search(line, bound_pattern))
         {
-             std::string temp_boundary =  "--" + get_boundary_val(line);
-
-             if (cur_boundary != temp_boundary)
-                 cur_boundary = temp_boundary;
+            std::string temp_boundary =  "--" + get_boundary_val(line);
+            
+            boundaries.push_back(temp_boundary);
+            
+            /*if (cur_boundary != temp_boundary)
+                cur_boundary = temp_boundary;*/
         }
 
         // Флаг вложения
         if (regex_search(line, attach_pattern))
         {
             attach_found = true;
-           // std::cout << "attachment found " << line  << std::endl;
+            std::cout << "attachment found " << line  << std::endl;
         }
 
         if (attach_found && attach_body_start_found)
         {
             
-		    if (line.find(cur_boundary) != std::string::npos || empty_line(line))
+		    if (/*line.find(cur_boundary) != std::string::npos*/ || empty_line(line) || contain_any_boundary(boundaries, line)) 
             {
-                //std::cout << "cur_boundary: "<< cur_boundary << "\n";
+                std::cout << "cur_boundary: "<< cur_boundary << "\n";
 				attach_found            = false;
                 attach_body_start_found = false;
 				attachments_cnt++;
@@ -639,7 +658,6 @@ int main(int argc, char *argv[])
         }
     }
 	std::cout << "Total attachments found: " << attachments_cnt << std::endl;
-	
     base64_cleanup();
     eml_file.close();
 }
