@@ -76,7 +76,6 @@ func printVisited(v []int) {
 }
 
 func printEulerianСycleVertices(adjacencyList [][]int, vertexDegree []int, visitedEdges map[Edge]int, vertex int, startVertex int) {
-
 	fmt.Print(vertex, " ")
 	for i := range adjacencyList[vertex] {
 		edgeTo := Edge{fromVertex: vertex, toVertex: adjacencyList[vertex][i]}
@@ -98,14 +97,12 @@ func simpleDfs(adjacencyList [][]int, visited []bool, vertex int) {
 	visited[vertex] = true
 	for i := range adjacencyList[vertex] {
 		if !visited[adjacencyList[vertex][i]] {
-
 			simpleDfs(adjacencyList, visited, adjacencyList[vertex][i])
 		}
 	}
 }
 
 func isConnected(adjacencyList [][]int) bool {
-
 	visited := make([]bool, len(adjacencyList))
 	simpleDfs(adjacencyList, visited, 1)
 	for i := 1; i < len(visited); i++ {
