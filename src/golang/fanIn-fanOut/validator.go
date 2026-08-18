@@ -13,6 +13,13 @@ type Url struct {
 	priority uint8
 }
 
+type ResponseNew struct {
+
+	code	string
+	url		Url
+	timestamp int64
+}
+
 type Response string
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -54,15 +61,15 @@ func getResp(url string) Response {
 
 	switch randInt {
 	case 0:
-		resp = "200"
+		resp = "200 OK"
 	case 1:
-		resp = "300"
+		resp = "301 Moved Permanently"
 	case 2:
-		resp = "400"
+		resp = "404 Not Found"
 	case 3:
-		resp = "500"
+		resp = "400 Bad Request"
 	case 4:
-		resp = "600"
+		resp = "500 Internal Server Error"
 	}
 	return resp
 }
@@ -112,6 +119,7 @@ func manage(urls []Url, chansOutput []chan Response, wg *sync.WaitGroup) {
 			lowInput <- url.name
 		}
 	}
+
 	close(highInput)
 	close(midInput)
 	close(lowInput)
