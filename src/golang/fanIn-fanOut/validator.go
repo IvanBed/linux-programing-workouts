@@ -14,9 +14,8 @@ type Url struct {
 }
 
 type ResponseNew struct {
-
-	code	string
-	url		Url
+	code      string
+	url       Url
 	timestamp int64
 }
 
@@ -126,6 +125,37 @@ func manage(urls []Url, chansOutput []chan Response, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
+func requestWorkerPool(urls []Url, chansOutput []chan Response, workersCnt int, wg *sync.WaitGroup) {
+
+	var chansIn []chan string
+	chansIn[0] = make(chan string)
+	chansIn[1] = make(chan string)
+	chansIn[2] = make(chan string)
+
+	wg.Add(workersCnt)
+
+	for i := 0; i < workersCnt; i++ {
+
+		go checkUrl(chansIn[i%3], chansOutput[i%3], wg)
+	}
+
+	go func() {
+		wg.Wait()
+		for _, out := range chansOutput {
+			close(out)
+		}
+	}()
+
+	go func() {
+		for _, url := range urls {
+			chansIn[url.priority] <- url.name
+		}
+
+		//for
+	}()
+
+}
+
 func merge(chans []chan Response, out chan Response, wg *sync.WaitGroup) {
 	var resp Response
 	var highStatus bool = true
@@ -169,6 +199,53 @@ func merge(chans []chan Response, out chan Response, wg *sync.WaitGroup) {
 		}
 
 	}
+}
+
+func mergeNew(chans []chan Response) chan Response {
+	var resp Response
+	var highStatus bool = true
+	var midStatus bool = true
+	var lowStatus bool = true
+
+	out := make(chan Response)
+
+	high := make([]Response, 0)
+	mid := make([]Response, 0)
+	low := make([]Response, 0)
+	cnt := 0
+
+	defer func() {
+		fmt.Println("Total cnt: ", cnt)
+		fillOutputChannel(out, high, mid, low)
+	}()
+
+	for {
+		if !highStatus && !midStatus && !lowStatus {
+			break
+		}
+
+		select {
+		case resp, highStatus = <-chans[0]:
+			if resp != "" {
+				cnt++
+				high = append(high, resp)
+			}
+		case resp, midStatus = <-chans[1]:
+			if resp != "" {
+				cnt++
+				mid = append(mid, resp)
+			}
+		case resp, lowStatus = <-chans[2]:
+			if resp != "" {
+				cnt++
+				low = append(low, resp)
+			}
+		default:
+			//fmt.Println(highStatus, midStatus, lowStatus)
+		}
+
+	}
+	return out
 }
 
 func makeUrls(size int) []Url {
