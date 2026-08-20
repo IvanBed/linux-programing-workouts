@@ -5,7 +5,9 @@ package main
 import (
 	"fmt"
 	"math/rand/v2"
+	"strconv"
 	"sync"
+	"time"
 )
 
 type Url struct {
@@ -20,6 +22,12 @@ type ResponseNew struct {
 }
 
 type Response string
+
+const (
+	High = iota
+	Middle
+	Low
+)
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -53,90 +61,57 @@ func fillOutputChannel(ch chan Response, slices ...[]Response) {
 	}
 }
 
-func getResp(url string) Response {
+func getResp(url Url) Response {
 
-	var resp Response
+	var resp Response = strconv.FormatInt(url.priority, 10)
 	randInt := rand.IntN(5)
-
+	randTime := rand.IntN(1000)
+	time.Sleep(time.Duration(randTime) * time.Millisecond)
 	switch randInt {
 	case 0:
-		resp = "200 OK"
+		resp += " 200 OK"
 	case 1:
-		resp = "301 Moved Permanently"
+		resp += " 301 Moved Permanently"
 	case 2:
-		resp = "404 Not Found"
+		resp += " 404 Not Found"
 	case 3:
-		resp = "400 Bad Request"
+		resp += " 400 Bad Request"
 	case 4:
-		resp = "500 Internal Server Error"
+		resp += " 500 Internal Server Error"
 	}
 	return resp
 }
 
-func checkUrl(chIn chan string, chOut chan Response, wg *sync.WaitGroup) {
+func checkUrl(chIn chan Url, chOut chan Response, wg *sync.WaitGroup) {
 	cnt := 0
-
-	defer func() {
-		close(chOut)
-		wg.Done()
-	}()
-
-	for {
-		select {
-		case url, ok := <-chIn:
-			if !ok {
-				fmt.Println("cnt: ", cnt)
-				fmt.Println("close")
-
-				return
-			}
-			resp := getResp(url)
-			//fmt.Println(resp)
-			cnt++
-			chOut <- resp
-		}
+	defer wg.Done()
+	for url := range chIn {
+		resp := getResp(url)
+		fmt.Println(resp)
+		chOut <- resp
+		cnt++
 	}
 }
 
-func manage(urls []Url, chansOutput []chan Response, wg *sync.WaitGroup) {
-	highInput := make(chan string)
-	midInput := make(chan string)
-	lowInput := make(chan string)
-
-	go checkUrl(highInput, chansOutput[0], wg)
-	go checkUrl(midInput, chansOutput[1], wg)
-	go checkUrl(lowInput, chansOutput[2], wg)
-
-	for _, url := range urls {
-		//fmt.Println(url)
-		switch url.priority {
-		case 0:
-			highInput <- url.name
-		case 1:
-			midInput <- url.name
-		case 2:
-			lowInput <- url.name
-		}
-	}
-
-	close(highInput)
-	close(midInput)
-	close(lowInput)
-	wg.Done()
+func makeChans[T any](bufSize int) []chan T {
+	chans := make([]chan T, 3)
+	chans[High] = make(chan T, bufSize)
+	chans[Middle] = make(chan T, bufSize)
+	chans[Low] = make(chan T, bufSize)
+	return chans
 }
 
-func requestWorkerPool(urls []Url, chansOutput []chan Response, workersCnt int, wg *sync.WaitGroup) {
-
-	var chansIn []chan string
-	chansIn[0] = make(chan string)
-	chansIn[1] = make(chan string)
-	chansIn[2] = make(chan string)
-
-	wg.Add(workersCnt)
+func requestWorkerPool(urls []Url, workersCnt int) []chan Response {
+	if workersCnt < 3 {
+		workersCnt = 3
+	}
+	var wg sync.WaitGroup
+	wg.Add(workersCnt + 1)
+	chansInput := makeChans[Url](workersCnt)
+	chansOutput := makeChans[Response](0)
 
 	for i := 0; i < workersCnt; i++ {
-
-		go checkUrl(chansIn[i%3], chansOutput[i%3], wg)
+		go checkUrl(chansInput[i%3], chansOutput[i%3], &wg)
 	}
 
 	go func() {
@@ -147,105 +122,43 @@ func requestWorkerPool(urls []Url, chansOutput []chan Response, workersCnt int, 
 	}()
 
 	go func() {
+		defer wg.Done()
 		for _, url := range urls {
-			chansIn[url.priority] <- url.name
+			chansInput[url.priority] <- url
 		}
-
-		//for
+		for _, in := range chansInput {
+			close(in)
+		}
 	}()
 
+	return chansOutput
 }
 
-func merge(chans []chan Response, out chan Response, wg *sync.WaitGroup) {
-	var resp Response
-	var highStatus bool = true
-	var midStatus bool = true
-	var lowStatus bool = true
+func merge(chans []chan Response, out chan Response) {
 
-	high := make([]Response, 0)
-	mid := make([]Response, 0)
-	low := make([]Response, 0)
-	cnt := 0
+	var wg sync.WaitGroup
+	wg.Add(len(chans))
 
-	defer func() {
-		fmt.Println("Total cnt: ", cnt)
-		fillOutputChannel(out, high, mid, low)
-		wg.Done()
-	}()
+	responses := make([][]Response, 3)
 
-	for {
-		if !highStatus && !midStatus && !lowStatus {
-			return
-		}
+	responses[High] = make([]Response, 0)
+	responses[Middle] = make([]Response, 0)
+	responses[Low] = make([]Response, 0)
 
-		select {
-		case resp, highStatus = <-chans[0]:
-			if resp != "" {
-				cnt++
-				high = append(high, resp)
+	for index, ch := range chans {
+		go func(in chan Response, out []Response) {
+			defer wg.Done()
+			for resp := range in {
+				out = append(out, resp)
 			}
-		case resp, midStatus = <-chans[1]:
-			if resp != "" {
-				cnt++
-				mid = append(mid, resp)
-			}
-		case resp, lowStatus = <-chans[2]:
-			if resp != "" {
-				cnt++
-				low = append(low, resp)
-			}
-		default:
-			//fmt.Println(highStatus, midStatus, lowStatus)
-		}
-
+		}(ch, responses[index])
 	}
-}
 
-func mergeNew(chans []chan Response) chan Response {
-	var resp Response
-	var highStatus bool = true
-	var midStatus bool = true
-	var lowStatus bool = true
-
-	out := make(chan Response)
-
-	high := make([]Response, 0)
-	mid := make([]Response, 0)
-	low := make([]Response, 0)
-	cnt := 0
-
-	defer func() {
-		fmt.Println("Total cnt: ", cnt)
-		fillOutputChannel(out, high, mid, low)
+	go func() {
+		wg.Wait()
+		fillOutputChannel(out, responses[High], responses[Middle], responses[Low])
+		close(out)
 	}()
-
-	for {
-		if !highStatus && !midStatus && !lowStatus {
-			break
-		}
-
-		select {
-		case resp, highStatus = <-chans[0]:
-			if resp != "" {
-				cnt++
-				high = append(high, resp)
-			}
-		case resp, midStatus = <-chans[1]:
-			if resp != "" {
-				cnt++
-				mid = append(mid, resp)
-			}
-		case resp, lowStatus = <-chans[2]:
-			if resp != "" {
-				cnt++
-				low = append(low, resp)
-			}
-		default:
-			//fmt.Println(highStatus, midStatus, lowStatus)
-		}
-
-	}
-	return out
 }
 
 func makeUrls(size int) []Url {
@@ -256,14 +169,6 @@ func makeUrls(size int) []Url {
 	return urls
 }
 
-func makeChans(bufSize int) []chan Response {
-	chans := make([]chan Response, 3)
-	chans[0] = make(chan Response, bufSize)
-	chans[1] = make(chan Response, bufSize)
-	chans[2] = make(chan Response, bufSize)
-	return chans
-}
-
 func printUrls(urls []Url) {
 	for _, url := range urls {
 		fmt.Println(url)
@@ -271,23 +176,18 @@ func printUrls(urls []Url) {
 }
 
 func main() {
-	var wg sync.WaitGroup
-	wg.Add(5)
 
-	size := 1000
+	size := 10
 
 	urls := makeUrls(size)
-	chans := makeChans(0)
 	responses := make(chan Response, len(urls))
 
-	go manage(urls, chans, &wg)
-	go merge(chans, responses, &wg)
-	wg.Wait()
+	chansOutput := requestWorkerPool(urls, 6)
 
-	for i := 0; i < len(urls); i++ {
-		fmt.Println(<-responses)
+	go merge(chansOutput, responses)
+
+	for resp := range responses {
+		fmt.Println(resp)
 	}
-
-	close(responses)
 	fmt.Println("Ready")
 }
