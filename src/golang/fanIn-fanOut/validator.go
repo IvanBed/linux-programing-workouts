@@ -63,7 +63,7 @@ func fillOutputChannel(ch chan Response, slices ...[]Response) {
 
 func getResp(url Url) Response {
 
-	var resp Response = strconv.FormatInt(url.priority, 10)
+	var resp Response = Response(strconv.FormatInt(int64(url.priority), 10))
 	randInt := rand.IntN(5)
 	randTime := rand.IntN(1000)
 	time.Sleep(time.Duration(randTime) * time.Millisecond)
@@ -87,7 +87,6 @@ func checkUrl(chIn chan Url, chOut chan Response, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for url := range chIn {
 		resp := getResp(url)
-		fmt.Println(resp)
 		chOut <- resp
 		cnt++
 	}
@@ -146,12 +145,12 @@ func merge(chans []chan Response, out chan Response) {
 	responses[Low] = make([]Response, 0)
 
 	for index, ch := range chans {
-		go func(in chan Response, out []Response) {
+		go func(in chan Response, out *[]Response) {
 			defer wg.Done()
 			for resp := range in {
-				out = append(out, resp)
+				*out = append(*out, resp)
 			}
-		}(ch, responses[index])
+		}(ch, &responses[index])
 	}
 
 	go func() {
@@ -177,7 +176,7 @@ func printUrls(urls []Url) {
 
 func main() {
 
-	size := 10
+	size := 1000
 
 	urls := makeUrls(size)
 	responses := make(chan Response, len(urls))
