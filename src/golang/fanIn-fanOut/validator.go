@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math/rand/v2"
 	"strconv"
@@ -61,12 +62,13 @@ func fillOutputChannel(ch chan Response, slices ...[]Response) {
 	}
 }
 
-func getResp(url Url) Response {
+func getRespAsync(url Url, chOut chan Response) {
 
 	var resp Response = Response(strconv.FormatInt(int64(url.priority), 10))
-	randInt := rand.IntN(5)
+	randInt := rand.IntN(4)
 	randTime := rand.IntN(1000)
 	time.Sleep(time.Duration(randTime) * time.Millisecond)
+
 	switch randInt {
 	case 0:
 		resp += " 200 OK"
@@ -76,20 +78,28 @@ func getResp(url Url) Response {
 		resp += " 404 Not Found"
 	case 3:
 		resp += " 400 Bad Request"
-	case 4:
-		resp += " 500 Internal Server Error"
 	}
-	return resp
+
+	chOut <- resp
+	//close(chOut)
 }
 
-func checkUrl(chIn chan Url, chOut chan Response, wg *sync.WaitGroup) {
-	cnt := 0
+func checkUrl(chIn chan Url, chOut chan Response, wg *sync.WaitGroup, ctx context.Context) {
 	defer wg.Done()
+	respChan := make(chan Response)
+	var resp Response
 	for url := range chIn {
-		resp := getResp(url)
+		//fmt.Println(url)
+		go getRespAsync(url, respChan)
+		select {
+		case <-ctx.Done():
+			resp = Response(strconv.FormatInt(int64(url.priority), 10)) + " 500 Internal Server Error"
+		case resp = <-respChan:
+
+		}
 		chOut <- resp
-		cnt++
 	}
+
 }
 
 func makeChans[T any](bufSize int) []chan T {
@@ -100,17 +110,22 @@ func makeChans[T any](bufSize int) []chan T {
 	return chans
 }
 
-func requestWorkerPool(urls []Url, workersCnt int) []chan Response {
+func requestWorkerPool(urls []Url, workersCnt int, ctx context.Context) []chan Response {
 	if workersCnt < 3 {
 		workersCnt = 3
 	}
+
+	ctxWithTimeout, cancelFunction := context.WithTimeout(ctx, time.Duration(900)*time.Millisecond)
+
 	var wg sync.WaitGroup
-	wg.Add(workersCnt + 1)
+
 	chansInput := makeChans[Url](workersCnt)
 	chansOutput := makeChans[Response](0)
 
+	wg.Add(workersCnt + 1)
+
 	for i := 0; i < workersCnt; i++ {
-		go checkUrl(chansInput[i%3], chansOutput[i%3], &wg)
+		go checkUrl(chansInput[i%3], chansOutput[i%3], &wg, ctxWithTimeout)
 	}
 
 	go func() {
@@ -118,6 +133,7 @@ func requestWorkerPool(urls []Url, workersCnt int) []chan Response {
 		for _, out := range chansOutput {
 			close(out)
 		}
+		cancelFunction()
 	}()
 
 	go func() {
@@ -176,12 +192,19 @@ func printUrls(urls []Url) {
 
 func main() {
 
-	size := 1000
+	size := 10
+	ctx := context.Background()
+	ctxWithCancel, cancelFunction := context.WithCancel(ctx)
+
+	defer func() {
+		fmt.Println("Main Defer: canceling context")
+		cancelFunction()
+	}()
 
 	urls := makeUrls(size)
 	responses := make(chan Response, len(urls))
 
-	chansOutput := requestWorkerPool(urls, 6)
+	chansOutput := requestWorkerPool(urls, 6, ctxWithCancel)
 
 	go merge(chansOutput, responses)
 
