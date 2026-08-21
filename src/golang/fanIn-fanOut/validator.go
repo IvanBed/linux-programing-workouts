@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -16,13 +15,14 @@ type Url struct {
 	priority uint8
 }
 
-type ResponseNew struct {
+type Response struct {
 	code      string
 	url       Url
-	timestamp int64
+	timestamp time.Time
+	duration  time.Duration
 }
 
-type Response string
+type ResponseOld string
 
 const (
 	High = iota
@@ -40,19 +40,6 @@ func RandStringBytes(n int) string {
 	return string(b)
 }
 
-func concatSlices(l []Response, r []Response) []Response {
-	res := make([]Response, 0)
-
-	for i := range l {
-		res = append(res, l[i])
-	}
-
-	for i := range r {
-		res = append(res, r[i])
-	}
-	return res
-}
-
 func fillOutputChannel(ch chan Response, slices ...[]Response) {
 
 	for slice := range slices {
@@ -64,42 +51,45 @@ func fillOutputChannel(ch chan Response, slices ...[]Response) {
 
 func getRespAsync(url Url, chOut chan Response) {
 
-	var resp Response = Response(strconv.FormatInt(int64(url.priority), 10))
+	var resp Response
 	randInt := rand.IntN(4)
 	randTime := rand.IntN(1000)
-	time.Sleep(time.Duration(randTime) * time.Millisecond)
+	duration := time.Duration(randTime) * time.Millisecond
 
+	time.Sleep(duration)
 	switch randInt {
 	case 0:
-		resp += " 200 OK"
+		resp.code += "200 OK                   "
 	case 1:
-		resp += " 301 Moved Permanently"
+		resp.code += "301 Moved Permanently    "
 	case 2:
-		resp += " 404 Not Found"
+		resp.code += "404 Not Found            "
 	case 3:
-		resp += " 400 Bad Request"
+		resp.code += "400 Bad Request          "
 	}
+	resp.timestamp = time.Now()
+	resp.duration = duration
+	resp.url = url
 
 	chOut <- resp
-	//close(chOut)
 }
 
 func checkUrl(chIn chan Url, chOut chan Response, wg *sync.WaitGroup, ctx context.Context) {
 	defer wg.Done()
 	respChan := make(chan Response)
-	var resp Response
+
 	for url := range chIn {
-		//fmt.Println(url)
+		var resp Response
 		go getRespAsync(url, respChan)
 		select {
 		case <-ctx.Done():
-			resp = Response(strconv.FormatInt(int64(url.priority), 10)) + " 500 Internal Server Error"
+			resp.timestamp, _ = ctx.Deadline()
+			resp.code = "500 Internal Server Error"
+			resp.url = url
 		case resp = <-respChan:
-
 		}
 		chOut <- resp
 	}
-
 }
 
 func makeChans[T any](bufSize int) []chan T {
@@ -190,26 +180,30 @@ func printUrls(urls []Url) {
 	}
 }
 
+func printResult(responses chan Response) {
+
+	fmt.Println("Priority |", "Result Code ", "               | Duration")
+	for resp := range responses {
+		fmt.Println(resp.url.priority, "       | ", resp.code, " |", resp.duration)
+	}
+
+}
 func main() {
 
-	size := 10
+	size := 25
 	ctx := context.Background()
 	ctxWithCancel, cancelFunction := context.WithCancel(ctx)
 
 	defer func() {
-		fmt.Println("Main Defer: canceling context")
 		cancelFunction()
 	}()
 
 	urls := makeUrls(size)
+	printUrls(urls)
 	responses := make(chan Response, len(urls))
 
-	chansOutput := requestWorkerPool(urls, 6, ctxWithCancel)
+	chansOutput := requestWorkerPool(urls, 18, ctxWithCancel)
 
 	go merge(chansOutput, responses)
-
-	for resp := range responses {
-		fmt.Println(resp)
-	}
-	fmt.Println("Ready")
+	printResult(responses)
 }
