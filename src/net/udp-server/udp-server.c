@@ -158,7 +158,7 @@ int main(int argc, char **argv)
     if (!validate_dir_path(log_dir_path))
     {
         puts("Directory does not exist!\n");
-                return 2;
+         return 2;
     }
     puts("Start daemon");
     start_daemon();
