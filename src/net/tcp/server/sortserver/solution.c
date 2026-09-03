@@ -15,9 +15,6 @@
 #define PAGESIZE 4096
 #define QEUEUSIZE 5
 
-#define HELLO "hello\n"
-#define ENOUGH 64
-
 #define ERR_MSG1 "Can not open file\n"
 
 void signal_handler(int signal_num)
