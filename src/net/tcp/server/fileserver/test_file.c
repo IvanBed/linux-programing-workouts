@@ -54,7 +54,7 @@ void print_file(char const * file_path)
             puts("");
             puts(file_buf);
             index = 0;
-            memset(buf, 0, PAGESIZE);
+            memset(file_buf, 0, PAGESIZE);
         }
         printf("%c", ch); 
         file_buf[index++] = ch;

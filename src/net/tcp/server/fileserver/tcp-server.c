@@ -20,8 +20,6 @@
 
 #define ERR_MSG1 "Can not open file\n"
 
-
-
 void signal_handler(int signal_num)
 {
     exit(EXIT_FAILURE);
@@ -109,7 +107,7 @@ void send_file(int connection_sock, char const * file_path)
     {
         if(send(connection_sock, file_buf, PAGESIZE, 0) == -1)
         {
-
+            //log
         }
         memset(file_buf, 0, PAGESIZE);
     }
@@ -117,6 +115,19 @@ void send_file(int connection_sock, char const * file_path)
     //recv_cnt = read(connection_sock, buf, BUFSIZE);
 
     fclose(file);
+}
+
+void start_service(int connection_sock)
+{
+    ssize_t recv_cnt;
+    char    file_path[BUFSIZE];
+
+    memset(file_path, 0, BUFSIZE);
+
+    recv_cnt = read(connection_sock, file_path, BUFSIZE);
+    
+    file_path[strlen(file_path) - 1] = '\0';
+    send_file_old(connection_sock, file_path);
 }
 
 void main_loop(int server_sock)
@@ -141,9 +152,6 @@ void main_loop(int server_sock)
                 goto end_func;
             
             message[strlen(message) - 1] = '\0';
-            puts(message);
-            puts("test");
-            printf("recv: %d", recv_cnt);
             send_file_old(connection_sock, message);
             memset(message, 0, BUFSIZE);
         }
