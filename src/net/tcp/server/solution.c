@@ -56,15 +56,15 @@ void main_loop(int server_sock)
     {
         listen(server_sock, QEUEUSIZE);
         connection_sock = accept(server_sock, NULL, NULL);
-
-        recv_cnt = read(connection_sock, message, BUFSIZE);
-        if (strncmp(message, "OFF\n", 4) == 0)
-            goto end_func;
-            
-        puts(message);     
-        qsort(message, recv_cnt, sizeof(message[0]), compare);    
-        puts(message);
-        
+        while ((recv_cnt = read(connection_sock, message, BUFSIZE)) > 0)
+        {
+            if (strncmp(message, "OFF\n", 4) == 0)
+                goto end_func;
+               
+            qsort(message, recv_cnt, sizeof(message[0]), compare);
+            send(connection_sock, message, BUFSIZE, 0);
+            memset(message, 0, BUFSIZE);
+        }
     }
 
 end_func:
