@@ -15,7 +15,6 @@
 #include <fcntl.h>
 #include <dirent.h>
 
-
 #include <errno.h>
 
 #define LOOPBACK "127.0.0.1"
@@ -63,7 +62,7 @@ void start_daemon()
     }
 
     pid = getpid();
-    printf("%d\n", pid);
+    printf("[%d]\n", pid);
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
@@ -109,28 +108,34 @@ bool validate_dir_path(char const *log_dir_path)
 void main_loop(char const *log_dir_path, int sock_desc)
 {
     char    buf[BUFSIZE];
+    char   *message = "OK!";
     ssize_t recv_cnt;
     ssize_t log_write_cnt;
     int     log_fd;
-
+    
+    struct  sockaddr_in cliaddr;
+    int     len;
     memset(buf, 0, BUFSIZE);
 
     log_fd = open_log(log_dir_path);
 
     if (log_fd == -1)
     {
-        puts("Can not open file");
+        perror("Can not open file");
         return;
     }
     puts("Loop");
     while (1)
     {
-        recv_cnt = read(sock_desc, buf, BUFSIZE);
+        //recv_cnt = read(sock_desc, buf, BUFSIZE);
+        recv_cnt = recvfrom(sock_desc, buf, BUFSIZE, 0, (struct sockaddr*)&cliaddr, &len);
         if (strncmp(buf, "OFF\n", 4) == 0)
             break;
 
-        printf("cnt:%d body:%s", recv_cnt, buf);
+        //printf("cnt:%d body:%s", recv_cnt, buf);
         log_write_cnt = write(log_fd, buf, recv_cnt);
+        //write(sock_desc, message, sizeof(resp));
+        sendto(sock_desc, message, strlen(message), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
         memset(buf, 0, BUFSIZE);
     }
     close(log_fd);
@@ -146,8 +151,8 @@ int main(int argc, char **argv)
 
     if (argc != 3)
     {
-        puts("args!");
-        return 1;
+        perror("Specify the port and the log directory");
+        exit(EXIT_FAILURE);
     }
 
     signal(SIGURG, signal_handler);
@@ -157,10 +162,10 @@ int main(int argc, char **argv)
 
     if (!validate_dir_path(log_dir_path))
     {
-        puts("Directory does not exist!\n");
-         return 2;
+        perror("Directory does not exist!");
+        exit(EXIT_FAILURE);
     }
-    puts("Start daemon");
+    //puts("Start daemon");
     start_daemon();
     sock_desc = socket(AF_INET, SOCK_DGRAM, 0);
     init_addr_ipinet(&local, LOOPBACK, port);
@@ -169,5 +174,5 @@ int main(int argc, char **argv)
     main_loop(log_dir_path, sock_desc);
     close(sock_desc);
 
-    return 0;
+   exit(EXIT_SUCCESS);
 }

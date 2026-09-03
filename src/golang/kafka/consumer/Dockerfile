@@ -2,6 +2,12 @@ FROM golang:alpine AS builder
 
 WORKDIR /build
 
+ADD go.mod .
+
+ADD go.sum .
+
+RUN go mod download
+
 COPY . .
 
 #RUN go mod init consumer
