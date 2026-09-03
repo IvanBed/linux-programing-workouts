@@ -29,7 +29,7 @@ typedef int bool;
 
 void signal_handler(int signal_num)
 {
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 void start_daemon()
@@ -174,5 +174,5 @@ int main(int argc, char **argv)
     main_loop(log_dir_path, sock_desc);
     close(sock_desc);
 
-   exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 }
