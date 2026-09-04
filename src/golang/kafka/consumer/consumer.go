@@ -1,25 +1,36 @@
-package consumer
+package main
 
 import (
 	"context"
 	"fmt"
 	"log"
 
-	"github.com/segmentio/kafka-go"
+	kf "github.com/segmentio/kafka-go"
 )
 
+func mainLoop(reader *kf.Reader, ctx context.Context) {
+
+	for {
+
+		msg, err := reader.ReadMessage(ctx)
+		if err != nil {
+			log.Fatal("Ошибка при получении:", err)
+		}
+
+		fmt.Println(string(msg.Value))
+	}
+}
+
 func main() {
+
+	ctx := context.Background()
+
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{"localhost:9092"},
-		Topic:   "my-topic",
-		GroupID: "my-groupID",
+		Topic:   "test-topic",
+		GroupID: "1",
 	})
 	defer reader.Close()
 
-	msg, err := reader.ReadMessage(context.Background())
-	if err != nil {
-		log.Fatal("Ошибка при получении:", err)
-	}
-
-	fmt.Println(string(msg.Value))
+	mainLoop(reader, ctx)
 }

@@ -4,6 +4,10 @@ WORKDIR /build
 
 COPY . .
 
+RUN go mod init main
+
+RUN go mod tidy
+
 RUN go build -o producer producer.go
 
 FROM alpine
