@@ -18,7 +18,16 @@
 #define HELLO "hello\n"
 #define ENOUGH 64
 
-#define ERR_MSG1 "Can not open file\n"
+#define ERR_MSG1 "Can not open file"
+#define OK_MSG "OK!"
+
+enum Operation 
+{
+    GET,
+    POST,
+    UNDEFINED
+};
+
 
 void signal_handler(int signal_num)
 {
@@ -43,10 +52,11 @@ size_t get_file_size(FILE *f)
     return size;
 }
 
-void send_file_old(int connection_sock, char const * file_path)
+void send_file(int connection_sock, char const * file_path)
 {
     char   file_buf[PAGESIZE];
     FILE  *file;
+    char  *file_name;
     size_t file_size;
     size_t index;
     char   ch;
@@ -59,6 +69,10 @@ void send_file_old(int connection_sock, char const * file_path)
         send(connection_sock, ERR_MSG1, sizeof(ERR_MSG1), 0);
         perror("Can not open file");
         return;
+    } 
+    else
+    {
+        send(connection_sock, OK_MSG, sizeof(OK_MSG), 0);
     }
 
     file_size = get_file_size(file);
@@ -81,53 +95,102 @@ void send_file_old(int connection_sock, char const * file_path)
     fclose(file);
 }
 
-void send_file(int connection_sock, char const * file_path)
+enum Operation get_op_type(char *const request) 
 {
-    char   file_buf[PAGESIZE];
-    FILE  *file;
-    size_t file_size;
-    size_t index;
-    char   ch;
-    char   file_size_str[ENOUGH];
-    file = fopen(file_path, "rb");
+    if (strncmp(request, "GET", 3) == 0) 
+        return GET;
+    if (strncmp(request, "GET", 3) == 0) 
+        return POST;
+    return UNDEFINED;
+}
+
+size_t get_tokens_cnt(char const *str, size_t len) 
+{
+    size_t cnt = 1;
+    for (size_t i = 0 ;i < len; i++)
+        if (str[i] == ':')
+            cnt++;
+    return cnt;
+}
+
+void add_elemnt(char **tokens, char *str, size_t tokens_indx, size_t start_pos, size_t end_pos)
+{
+    size_t token_size = end_pos - start_pos;
+    tokens[tokens_indx] = malloc(token_size);
+    memcpy(tokens[tokens_indx], str + start_pos, token_size);
+    tokens[tokens_indx][token_size] = 0;
+    if (tokens[tokens_indx][token_size - 1]  == '\n') 
+    {
+        tokens[tokens_indx][token_size - 1] = 0;
+    }
+}
+
+char **parse_request(char *str, size_t *out_token_cnt)
+{
+    size_t token_size;
+    int   str_len = strlen(str); 
+    size_t tokens_cnt = get_tokens_cnt(str, (size_t)str_len);
     
-    if (!file)
+    char **tokens = malloc(sizeof(char*) * tokens_cnt);
+    for (size_t i = 0; i < tokens_cnt;  i++)
     {
-        send(connection_sock, ERR_MSG1, sizeof(ERR_MSG1), 0);
-        perror("Can not open file\n");
-        return;
+        tokens[i] = 0;
     }
-
-    file_size = get_file_size(file);
-    sprintf(file_size_str, "%d\n", file_size);
-    send(connection_sock, file_size_str, strlen(file_size_str), 0);
-    index = 0;
-
-    while (fgets(file_buf, PAGESIZE, file) !=NULL)
+    size_t start_pos = 0;
+    size_t tokens_indx = 0;
+    size_t end_pos = 0;
+    for (; end_pos < str_len; end_pos++) 
     {
-        if(send(connection_sock, file_buf, PAGESIZE, 0) == -1)
+        if (str[end_pos] == ':' && tokens_indx < tokens_cnt)
         {
-            //log
+            add_elemnt(tokens, str, tokens_indx, start_pos, end_pos);
+            start_pos = end_pos + 1;
+            tokens_indx++;
         }
-        memset(file_buf, 0, PAGESIZE);
     }
+    add_elemnt(tokens, str, tokens_indx, start_pos, end_pos);
+    
+    *out_token_cnt = tokens_cnt;
+    return tokens;
+}
 
-    //recv_cnt = read(connection_sock, buf, BUFSIZE);
-
-    fclose(file);
+void free_matrix(char **matrix, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        free(matrix[i]);
+    }
+    free(matrix);
 }
 
 void start_service(int connection_sock)
 {
-    ssize_t recv_cnt;
-    char    file_path[BUFSIZE];
+    ssize_t        recv_cnt;
+    char           request[BUFSIZE];
+    char          *file_path;
+    enum Operation op;
 
-    memset(file_path, 0, BUFSIZE);
+    char **        args;
+    size_t         args_cnt;
 
-    recv_cnt = read(connection_sock, file_path, BUFSIZE);
+    memset(request, 0, BUFSIZE);
+
+    recv_cnt = read(connection_sock, request, BUFSIZE);
     
-    file_path[strlen(file_path) - 1] = '\0';
-    send_file_old(connection_sock, file_path);
+    args = parse_request(args, args_cnt);
+
+    op = get_op_type(args[0])
+
+    switch (op) 
+    {
+        case GET: 
+            send_file(connection_sock, args[1]);
+            break;
+        case POST:
+            upload_file(connection_sock, args[1], args[2]);
+            break;  
+        default:
+    }      
 }
 
 void main_loop(int server_sock)
@@ -152,7 +215,7 @@ void main_loop(int server_sock)
                 goto end_func;
             
             message[strlen(message) - 1] = '\0';
-            send_file_old(connection_sock, message);
+            send_file(connection_sock, message);
             memset(message, 0, BUFSIZE);
         }
     }
