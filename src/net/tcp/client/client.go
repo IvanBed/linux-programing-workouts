@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -39,7 +40,9 @@ func downloadFile(reader *bufio.Reader, filePath string) error {
 	var writer *bufio.Writer
 	var perms os.FileMode = 0666
 
-	destFile, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, perms)
+	fmt.Println("downloadFile")
+
+	destFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, perms)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -47,36 +50,45 @@ func downloadFile(reader *bufio.Reader, filePath string) error {
 	defer destFile.Close()
 
 	writer = bufio.NewWriter(destFile)
-
+	recvData := make([]byte, 4096)
+	// Добавить timeout
 	for {
-		bytes, err := reader.ReadBytes('\n')
+		bytes, err := reader.Read(recvData)
 		if err != nil {
-			if err.Error() != "EOF" {
-				fmt.Printf("Ошибка чтения файла: %v\n", err)
+			if err != io.EOF {
+				fmt.Println("Read error : ", err)
+			} else {
+				fmt.Println("End of the file")
 			}
 			break
 		}
-		for i := range bytes {
-			writer.WriteByte(bytes[i])
+		fmt.Println("read: ", bytes)
+		for i := 0; i < bytes; i++ {
+			writer.WriteByte(recvData[i])
 		}
+		writer.Flush()
 	}
 	return nil
 }
 
 func getFile(conn net.Conn, srcPath string, destPath string) error {
 
-	var fileName string
 	var fileSizeStr string
 	var fileSize int64
 	var downloadedFileSize int64
 
 	var request string = "GET:" + srcPath + "\n"
 
+	var stop string = "STOP\n"
+	var letsgo string = "GO\n"
+
 	var response string
 
 	var reader *bufio.Reader
 
 	reader = bufio.NewReader(conn)
+
+	fmt.Println("getFile")
 
 	conn.Write([]byte(request))
 
@@ -85,15 +97,14 @@ func getFile(conn net.Conn, srcPath string, destPath string) error {
 		fmt.Println("Error reading:", err.Error())
 		return err
 	}
-
-	if response != "OK" {
+	fmt.Println("response")
+	if response != "OK\n" {
+		fmt.Println(response)
+		conn.Write([]byte(stop))
 		return errors.New("err Code")
-	}
-
-	fileName, err = reader.ReadString('\n')
-	if err != nil {
-		fmt.Println("Error reading:", err.Error())
-		return err
+	} else {
+		fmt.Println(response)
+		conn.Write([]byte(letsgo))
 	}
 
 	fileSizeStr, err = reader.ReadString('\n')
@@ -102,13 +113,16 @@ func getFile(conn net.Conn, srcPath string, destPath string) error {
 		return err
 	}
 
-	destFilePath := filepath.Join(destPath, fileName)
+	fmt.Println("fileSizeStr: ", fileSizeStr)
+	fmt.Println("filename: ", filepath.Base(srcPath))
+
+	destFilePath := filepath.Join(destPath, filepath.Base(srcPath))
 	err = downloadFile(reader, destFilePath)
 	if err != nil {
 		fmt.Println("Error downloading:", err.Error())
 		return err
 	}
-
+	fmt.Println("Download end")
 	fileSize, err = strconv.ParseInt(fileSizeStr, 10, 64)
 	downloadedFileSize, err = getFileSize(destFilePath)
 	if err != nil {
@@ -145,7 +159,7 @@ func main() {
 	srcPath = os.Args[4]
 
 	if len(os.Args) == 5 {
-		destPath = "default"
+		destPath = "/tmp"
 	} else {
 		destPath = os.Args[5]
 	}

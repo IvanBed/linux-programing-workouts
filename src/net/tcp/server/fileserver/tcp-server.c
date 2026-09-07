@@ -18,8 +18,8 @@
 #define HELLO "hello\n"
 #define ENOUGH 64
 
-#define ERR_MSG1 "Can not open file"
-#define OK_MSG "OK!"
+#define ERR_MSG1 "Can not open file\n"
+#define OK_MSG "OK\n"
 
 enum Operation 
 {
@@ -55,6 +55,8 @@ size_t get_file_size(FILE *f)
 void send_file(int connection_sock, char const * file_path)
 {
     char   file_buf[PAGESIZE];
+    char   resp[PAGESIZE];
+
     FILE  *file;
     char  *file_name;
     size_t file_size;
@@ -62,24 +64,39 @@ void send_file(int connection_sock, char const * file_path)
     char   ch;
     char   file_size_str[ENOUGH];
 
+    memset(resp, 0, PAGESIZE);
+    memset(file_buf, 0, PAGESIZE);
+
     file = fopen(file_path, "rb");
 
     if (!file)
     {
         send(connection_sock, ERR_MSG1, sizeof(ERR_MSG1), 0);
+        printf("%s]n", file_path);
         perror("Can not open file");
         return;
     } 
     else
     {
+        puts("OK");
         send(connection_sock, OK_MSG, sizeof(OK_MSG), 0);
+    }
+    
+    read(connection_sock, resp, PAGESIZE);
+    puts("resp");
+    puts(resp);
+    if (strncmp(resp, "STOP\n", 4) == 0) 
+    {
+        puts("Stop send file to this client");
+        return;
     }
 
     file_size = get_file_size(file);
     sprintf(file_size_str, "%d\n", file_size);
-
+    puts("Send size"); 
     send(connection_sock, file_size_str, strlen(file_size_str), 0);
-    index = 0;
+    /*index = 0;
+    puts("Send file"); 
     while ((ch = fgetc(file)) != EOF)
     {
         file_buf[index++] = ch;
@@ -89,10 +106,28 @@ void send_file(int connection_sock, char const * file_path)
             index = 0;
             memset(file_buf, 0, PAGESIZE);
         }
-    }
+    }*/
+
     send(connection_sock, file_buf, index, 0);
+
+    while (fgets(file_buf, PAGESIZE, file) !=NULL)
+    {
+        if(send(connection_sock, file_buf, PAGESIZE, 0) == -1)
+        {
+            //log
+        }
+        puts("send packeg");
+        memset(file_buf, 0, PAGESIZE);
+    }
+
     //recv_cnt = read(connection_sock, buf, BUFSIZE);
     fclose(file);
+}
+
+void upload_file(int connection_sock, char const * file_path, char const * dest_path)
+{
+
+
 }
 
 enum Operation get_op_type(char *const request) 
@@ -177,13 +212,14 @@ void start_service(int connection_sock)
 
     recv_cnt = read(connection_sock, request, BUFSIZE);
     
-    args = parse_request(args, args_cnt);
+    args = parse_request(request, &args_cnt);
 
-    op = get_op_type(args[0])
+    op = get_op_type(args[0]);
 
     switch (op) 
     {
         case GET: 
+            printf("request: %s | %s\n", args[0], args[1]);
             send_file(connection_sock, args[1]);
             break;
         case POST:
@@ -191,6 +227,7 @@ void start_service(int connection_sock)
             break;  
         default:
     }      
+
 }
 
 void main_loop(int server_sock)
@@ -206,18 +243,8 @@ void main_loop(int server_sock)
         listen(server_sock, QEUEUSIZE);
         connection_sock = accept(server_sock, NULL, NULL);
         puts("accepted!");
-
-        send(connection_sock, HELLO, strlen(HELLO), 0);
-
-        while ((recv_cnt = read(connection_sock, message, BUFSIZE)) > 0)
-        {
-             if (strcmp(message, "OFF\n") == 0)
-                goto end_func;
-            
-            message[strlen(message) - 1] = '\0';
-            send_file(connection_sock, message);
-            memset(message, 0, BUFSIZE);
-        }
+        start_service(connection_sock);
+        close(connection_sock);
     }
 
 end_func:
