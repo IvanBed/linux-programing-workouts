@@ -46,6 +46,8 @@ services:
     image: consumer:latest
     container_name: consumer
     hostname: consumer
+    ports:
+      - "22007:22007"   
     depends_on:
       - kafka
 
@@ -53,5 +55,7 @@ services:
     image: producer:latest
     container_name: producer
     hostname: producer
+    ports:
+      - "22008:22008"  
     depends_on:
       - kafka
