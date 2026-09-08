@@ -61,7 +61,7 @@ void send_file(int connection_sock, char const * file_path)
     char  *file_name;
     size_t file_size;
     size_t index;
-    char   ch;
+    size_t read_bytes;
     char   file_size_str[ENOUGH];
 
     memset(resp, 0, PAGESIZE);
@@ -93,38 +93,36 @@ void send_file(int connection_sock, char const * file_path)
 
     file_size = get_file_size(file);
     sprintf(file_size_str, "%d\n", file_size);
-    puts("Send size"); 
+    printf("File size %s\n", file_size_str); 
     send(connection_sock, file_size_str, strlen(file_size_str), 0);
-    /*index = 0;
+
+    index = 0;
     puts("Send file"); 
-    while ((ch = fgetc(file)) != EOF)
+    while (!feof(file))
     {
-        file_buf[index++] = ch;
+        if (ferror(file)) 
+        {
+            printf("File Error\n");
+            break;
+        }
+        file_buf[index++] = (char)fgetc(file);
         if (index == PAGESIZE)
         {
             send(connection_sock, file_buf, PAGESIZE, 0);
             index = 0;
             memset(file_buf, 0, PAGESIZE);
+            printf("Send %d bytes\n", index);
         }
-    }*/
-
-    send(connection_sock, file_buf, index, 0);
-
-    while (fgets(file_buf, PAGESIZE, file) !=NULL)
-    {
-        if(send(connection_sock, file_buf, PAGESIZE, 0) == -1)
-        {
-            //log
-        }
-        puts("send packeg");
-        memset(file_buf, 0, PAGESIZE);
     }
-
-    //recv_cnt = read(connection_sock, buf, BUFSIZE);
+    
+    if (index > 1)
+        send(connection_sock, file_buf, index - 1, 0);
+    
+    printf("Send %d bytes\n", index - 1);
     fclose(file);
 }
 
-void upload_file(int connection_sock, char const * file_path, char const * dest_path)
+void get_file(int connection_sock, char const * file_path, char const * dest_path)
 {
 
 
@@ -163,7 +161,7 @@ void add_elemnt(char **tokens, char *str, size_t tokens_indx, size_t start_pos, 
 char **parse_request(char *str, size_t *out_token_cnt)
 {
     size_t token_size;
-    int   str_len = strlen(str); 
+    int    str_len = strlen(str); 
     size_t tokens_cnt = get_tokens_cnt(str, (size_t)str_len);
     
     char **tokens = malloc(sizeof(char*) * tokens_cnt);
@@ -189,13 +187,13 @@ char **parse_request(char *str, size_t *out_token_cnt)
     return tokens;
 }
 
-void free_matrix(char **matrix, size_t size)
+void free_args_list(char **args_list, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
-        free(matrix[i]);
+        free(args_list[i]);
     }
-    free(matrix);
+    free(args_list);
 }
 
 void start_service(int connection_sock)
@@ -223,11 +221,30 @@ void start_service(int connection_sock)
             send_file(connection_sock, args[1]);
             break;
         case POST:
-            upload_file(connection_sock, args[1], args[2]);
+            get_file(connection_sock, args[1], args[2]);
             break;  
         default:
     }      
 
+    free_args_list(args, args_cnt);
+}
+
+int create_server(char *ip_address, int port)
+{
+    int    server_sock;
+    struct sockaddr_in local;
+    int    bind_res;
+
+    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    init_addr_ipinet(&local, ip_address, port);
+
+    bind_res = bind(server_sock, (struct sockaddr*) &local, sizeof(local));
+    if (bind_res == -1)
+    {
+        perror("Can not bind the port");
+        return -1;
+    }
+    return server_sock; 
 }
 
 void main_loop(int server_sock)
@@ -254,10 +271,9 @@ end_func:
 int main(int argc, char **argv)
 {
     int                server_sock;
-    struct sockaddr_in local;
     int                port;
-    int                bind_res;
-
+    char              *ip_address;
+    
     if (argc != 2)
     {
         perror("Specify the port");
@@ -265,16 +281,23 @@ int main(int argc, char **argv)
     }
 
     signal(SIGURG, signal_handler);
-
+    
+    ip_address = LOOPBACK;
     port = atoi(argv[1]);
 
-    server_sock = socket(AF_INET, SOCK_STREAM, 0);
-    init_addr_ipinet(&local, LOOPBACK, port);
+    /*server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    init_addr_ipinet(&local, ip_address, port);
 
     bind_res = bind(server_sock, (struct sockaddr*) &local, sizeof(local));
     if (bind_res == -1)
     {
         perror("Can not bind the port");
+        exit(EXIT_FAILURE);
+    }*/
+
+    server_sock = create_server(ip_address, port);
+    if (server_sock == -1)
+    {
         exit(EXIT_FAILURE);
     }
     puts("Start main loop!");
