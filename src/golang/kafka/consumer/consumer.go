@@ -1,36 +1,61 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
+	"os"
 
-	kf "github.com/segmentio/kafka-go"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-func mainLoop(reader *kf.Reader, ctx context.Context) {
-
-	for {
-
-		msg, err := reader.ReadMessage(ctx)
-		if err != nil {
-			log.Fatal("Ошибка при получении:", err)
+func mainLoop(consumer *kafka.Consumer) {
+	msg_count := 0
+	run := true
+	//MIN_COMMIT_COUNT := 1000
+	for run == true {
+		ev := consumer.Poll(1000)
+		switch e := ev.(type) {
+		case *kafka.Message:
+			fmt.Printf("%% Message on %s:\n%s\n", e.TopicPartition, string(e.Value))
+			msg_count += 1
+			//if msg_count%MIN_COMMIT_COUNT == 0 {
+			consumer.Commit()
+			//}
+			//fmt.Printf("%% Message on %s:\n%s\n", e.TopicPartition, string(e.Value))
+		case kafka.Error:
+			fmt.Fprintf(os.Stderr, "%% Error: %v\n", e)
+			run = false
+		default:
+			//fmt.Printf("Ignored %v\n", e)
 		}
-
-		fmt.Println(string(msg.Value))
 	}
 }
 
 func main() {
+	// Настройка конфигурации консьюмера
+	config := &kafka.ConfigMap{
+		"bootstrap.servers": "192.168.1.43:9092",
+		"group.id":          "myGroup",
+		"auto.offset.reset": "smallest",
+	}
 
-	ctx := context.Background()
+	consumer, err := kafka.NewConsumer(config)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create consumer: %v", err))
+	}
 
-	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: []string{"localhost:9092"},
-		Topic:   "test-topic",
-		GroupID: "1",
-	})
-	defer reader.Close()
+	if err != nil {
+		panic(err)
+	}
 
-	mainLoop(reader, ctx)
+	err = consumer.SubscribeTopics([]string{"async-topic", "sync-topic"}, nil)
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Consumer initialized")
+
+	mainLoop(consumer)
+
+	consumer.Close()
 }

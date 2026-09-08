@@ -4,9 +4,11 @@ WORKDIR /build
 
 COPY . .
 
-RUN go mod init main
+ADD go.mod .
 
-RUN go mod tidy
+ADD go.sum .
+
+RUN go mod download
 
 RUN go build -o consumer consumer.go
 
