@@ -2,60 +2,54 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log"
+	"sync"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/IBM/sarama"
 )
 
-func mainLoop(consumer *kafka.Consumer) {
-	msg_count := 0
-	run := true
+func mainLoop(partConsumer sarama.PartitionConsumer, mtx *sync.Mutex, responseChannels map[string]chan *sarama.ConsumerMessage) {
+
 	//MIN_COMMIT_COUNT := 1000
-	for run == true {
-		ev := consumer.Poll(1000)
-		switch e := ev.(type) {
-		case *kafka.Message:
-			fmt.Printf("%% Message on %s:\n%s\n", e.TopicPartition, string(e.Value))
-			msg_count += 1
-			//if msg_count%MIN_COMMIT_COUNT == 0 {
-			consumer.Commit()
-			//}
-			//fmt.Printf("%% Message on %s:\n%s\n", e.TopicPartition, string(e.Value))
-		case kafka.Error:
-			fmt.Fprintf(os.Stderr, "%% Error: %v\n", e)
-			run = false
-		default:
-			//fmt.Printf("Ignored %v\n", e)
+	for {
+		select {
+		// Чтение сообщения из Kafka
+		case msg, ok := <-partConsumer.Messages():
+			if !ok {
+				log.Println("Channel closed, exiting goroutine")
+				return
+			}
+			responseID := string(msg.Key)
+			mtx.Lock()
+			ch, exists := responseChannels[responseID]
+			if exists {
+				ch <- msg
+				delete(responseChannels, responseID)
+			}
+			mtx.Unlock()
 		}
 	}
 }
 
 func main() {
 	// Настройка конфигурации консьюмера
-	config := &kafka.ConfigMap{
-		"bootstrap.servers": "192.168.1.43:9092",
-		"group.id":          "myGroup",
-		"auto.offset.reset": "smallest",
-	}
+	var responseChannels map[string]chan *sarama.ConsumerMessage
+	var mtx sync.Mutex
 
-	consumer, err := kafka.NewConsumer(config)
+	consumer, err := sarama.NewConsumer([]string{"kafka:9092"}, nil)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create consumer: %v", err))
+		log.Fatalf("Failed to create consumer: %v", err)
 	}
+	defer consumer.Close()
 
+	partConsumer, err := consumer.ConsumePartition("pong", 0, sarama.OffsetNewest)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to consume partition: %v", err)
 	}
-
-	err = consumer.SubscribeTopics([]string{"async-topic", "sync-topic"}, nil)
-
-	if err != nil {
-		panic(err)
-	}
+	defer partConsumer.Close()
 
 	fmt.Println("Consumer initialized")
 
-	mainLoop(consumer)
+	mainLoop(partConsumer, responseChannels, &mtx)
 
-	consumer.Close()
 }
