@@ -1,3 +1,5 @@
+#include "include/utils.h"
+
 static size_t get_tokens_cnt(char const *str, size_t len) 
 {
     size_t cnt = 1;
@@ -26,42 +28,6 @@ enum Operation get_op_type(char *const request)
     if (strncmp(request, "GET", 3) == 0) 
         return POST;
     return UNDEFINED;
-}
-
-void start_daemon()
-{
-    pid_t pid = fork();
-
-    if (pid < 0)
-    {
-       exit(EXIT_FAILURE);
-    }
-    else if (pid > 0)
-    {
-        exit(EXIT_SUCCESS);
-    }
-
-    if (setsid() < 0)
-    {
-        exit(EXIT_FAILURE);
-    }
-
-    pid = fork();
-
-    if (pid < 0)
-    {
-       exit(EXIT_FAILURE);
-    }
-    else if (pid > 0)
-    {
-        exit(EXIT_SUCCESS);
-    }
-
-    pid = getpid();
-    printf("[%d]\n", pid);
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
 }
 
 char **parse_request(char *str, size_t *out_token_cnt)
