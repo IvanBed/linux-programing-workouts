@@ -16,10 +16,13 @@ func mainLoop(partConsumer sarama.PartitionConsumer, mtx *sync.Mutex, responseCh
 		// Чтение сообщения из Kafka
 		case msg, ok := <-partConsumer.Messages():
 			if !ok {
-				log.Println("Channel closed, exiting goroutine")
+				fmt.Println("Channel closed, exiting goroutine")
 				return
 			}
+
 			responseID := string(msg.Key)
+			msgVal := string(msg.Value)
+			fmt.Println(msgVal)
 			mtx.Lock()
 			ch, exists := responseChannels[responseID]
 			if exists {
@@ -36,13 +39,13 @@ func main() {
 	var responseChannels map[string]chan *sarama.ConsumerMessage
 	var mtx sync.Mutex
 
-	consumer, err := sarama.NewConsumer([]string{"kafka:9092"}, nil)
+	consumer, err := sarama.NewConsumer([]string{"localhost:29092"}, nil)
 	if err != nil {
 		log.Fatalf("Failed to create consumer: %v", err)
 	}
 	defer consumer.Close()
 
-	partConsumer, err := consumer.ConsumePartition("pong", 0, sarama.OffsetNewest)
+	partConsumer, err := consumer.ConsumePartition("my_topic", 0, sarama.OffsetNewest)
 	if err != nil {
 		log.Fatalf("Failed to consume partition: %v", err)
 	}
@@ -50,6 +53,5 @@ func main() {
 
 	fmt.Println("Consumer initialized")
 
-	mainLoop(partConsumer, responseChannels, &mtx)
-
+	mainLoop(partConsumer, &mtx, responseChannels)
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/IBM/sarama"
 )
 
-func asyncConversation(producer sarama.Producer, signals chan os.Signal) (enqueued int, producerErrors int) {
+func asyncConversation(producer sarama.AsyncProducer, signals chan os.Signal) (enqueued int, producerErrors int) {
 
 ProducerLoop:
 	for {
@@ -27,7 +27,7 @@ ProducerLoop:
 
 func main() {
 
-	producer, err := sarama.NewAsyncProducer([]string{"localhost:9092"}, nil)
+	producer, err := sarama.NewAsyncProducer([]string{"localhost:29092"}, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -43,6 +43,8 @@ func main() {
 	signal.Notify(signals, os.Interrupt)
 
 	var enqueued, producerErrors int
+
+	enqueued, producerErrors = asyncConversation(producer, signals)
 
 	log.Printf("Enqueued: %d; errors: %d\n", enqueued, producerErrors)
 }
