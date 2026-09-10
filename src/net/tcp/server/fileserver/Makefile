@@ -1,5 +1,5 @@
-fileserver: filesystem net os_layer utils server
-	gcc os_layer.o utils.o filesystem.o net.o server.o -o fileserver
+fileserver: filesystem net os_layer utils conn_pool server
+	gcc os_layer.o utils.o filesystem.o conn_pool.o net.o server.o -o fileserver
 
 server:
 	gcc -c server.c -o server.o
@@ -15,6 +15,9 @@ utils:
 
 os_layer:
 	gcc -c os_layer.c -o os_layer.o
+
+conn_pool:
+	gcc -c conn_pool.c -o conn_pool.o
 
 clean_all:
 	rm *.o
