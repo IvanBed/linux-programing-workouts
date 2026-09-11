@@ -8,7 +8,7 @@ import (
 	"github.com/IBM/sarama"
 )
 
-func mainLoop(partConsumer sarama.PartitionConsumer, consumer sarama.Consumer, mtx *sync.Mutex, responseChannels map[string]chan *sarama.ConsumerMessage) {
+func mainLoop(partConsumer sarama.PartitionConsumer, mtx *sync.Mutex, responseChannels map[string]chan *sarama.ConsumerMessage) {
 
 	//MIN_COMMIT_COUNT := 1000
 	for {
@@ -22,7 +22,6 @@ func mainLoop(partConsumer sarama.PartitionConsumer, consumer sarama.Consumer, m
 			responseID := string(msg.Key)
 			msgVal := string(msg.Value)
 			fmt.Printf("сonsumed message values %d offset %d\n", msgVal, msg.Offset)
-			consumer.MarkOffset(msg)
 
 			mtx.Lock()
 			ch, exists := responseChannels[responseID]
@@ -54,5 +53,5 @@ func main() {
 
 	fmt.Println("Consumer initialized")
 
-	mainLoop(partConsumer, consumer, &mtx, responseChannels)
+	mainLoop(partConsumer, &mtx, responseChannels)
 }
