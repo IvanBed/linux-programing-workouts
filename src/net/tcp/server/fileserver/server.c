@@ -6,6 +6,7 @@
 #include "include/os_layer.h"
 #include "include/conn_pool.h"
 
+#include <sys/select.h>
 #include <signal.h>
 #include <errno.h>
 #include <stdatomic.h>
@@ -18,12 +19,13 @@
 #define THREAD_LIMIT 64
 
 static atomic_int exit_signal = 0;
+static int pfd[2];
 
 void signal_handler(int signal_num)
 {
     puts("SIGINT signal recived. Terminated...");
-    //exit_signal = 1;
-    exit(EXIT_SUCCESS);
+    exit_signal = 1;
+    //exit(EXIT_SUCCESS);
     puts("Flag exit_signal is TRUE.");
 }
 
@@ -142,6 +144,10 @@ void main_loop(int server_sock, size_t max_connections)
     int               connection_sock;
     size_t            thread_indx = 0;
     size_t            attempts;
+    fd_set            readfds;
+    int               ready;
+    int               nfds = 2;
+
     ConnectionsPool   *pool;
     WorkerArgs        args[THREAD_LIMIT];
 
@@ -149,13 +155,33 @@ void main_loop(int server_sock, size_t max_connections)
     pool = create_conn_pool(max_connections);
     init_worker_args(args, THREAD_LIMIT, pool);
     listen(server_sock, QEUEUSIZE);
+    
+    FD_ZERO(&readfds);
+    FD_SET(server_sock, &readfds);
+    FD_SET(fds[1], &watch_set);   
     puts("main_loop");
     while (!exit_signal)
     {
         attempts = 0;
-        connection_sock = accept(server_sock, NULL, NULL);
-        puts("accept");
-        while (start_client_serving_routin(pool, args, connection_sock) == NOT_OK && attempts++ < MAX_ATTEMPS) {}
+        fd_set working_set;
+        memcpy(&working_set, &readfds, sizeof(readfds));        
+        while ((ready = select(nfds + 1, &working_set, NULL, NULL, 0)) == -1 && errno == EINTR) 
+        {
+            
+            continue;
+        }
+
+        if (FD_ISSET(server_sock, &readfds)) 
+        {
+            connection_sock = accept(server_sock, NULL, NULL);
+            FD_SET(connection_sock, &readfds);
+        }        
+        
+        if (connection_sock != -1 && FD_ISSET(connection_sock, &readfds)) 
+        {
+            while (start_client_serving_routin(pool, args, connection_sock) == NOT_OK && attempts++ < MAX_ATTEMPS) {}
+            puts("accept");
+        }  
     }
     wait_pthreads(pool);
     destruct_conn_pool(pool);
@@ -183,6 +209,9 @@ int main(int argc, char **argv)
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
     
+    if (pipe(pfd) == -1)
+        exit(1);
+
     server_sock = create_server(ip_address, port);
     if (server_sock == -1)
     {
