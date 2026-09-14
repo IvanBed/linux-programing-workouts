@@ -22,10 +22,18 @@ ConnectionsPool *create_conn_pool(size_t size)
     
     if (pthread_mutex_init (&(pool->lock), NULL) != 0)
     {
-        free(pool);
         free(pool->connections);
+        free(pool);
         return 0;
     }
+    if (pthread_cond_init (&(pool->cond), NULL) != 0)
+    {
+        free(pool->connections);
+        pthread_mutex_destroy(&(pool->lock));
+        free(pool);
+        return 0;
+    }
+
     pool->free_space_bitmap = INT64_MAX;
     pool->size = size;
     return pool;
@@ -40,7 +48,16 @@ void destruct_conn_pool(ConnectionsPool *pool)
 
     free(pool->connections);
     pthread_mutex_destroy(&(pool->lock));
+    pthread_cond_destroy(&(pool->cond));
     free(pool);
+}
+
+int pool_is_free(ConnectionsPool *pool)
+{
+    if (pool->free_space_bitmap == INT64_MAX)
+        return 1;
+    else 
+        return 0;
 }
 
 static int64_t book_pos(int64_t *bitmap)
@@ -110,7 +127,12 @@ int64_t release_connection(ConnectionsPool *pool, int64_t offset)
     
     //shutdown(conn->connection_sock, SHUT_RDWR);
     close(conn->connection_sock);
-    unbook_pos(&pool->free_space_bitmap, offset);
+    unbook_pos(&(pool->free_space_bitmap), offset);
+    if (pool_is_free(pool))
+    {
+        pthread_cond_broadcast(&(pool->cond));
+    }
+
     memset(conn, 0, sizeof(ConnectionDesc));
     return OK;
 }

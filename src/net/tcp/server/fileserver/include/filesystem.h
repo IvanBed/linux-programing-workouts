@@ -9,7 +9,7 @@
 
 typedef struct FileInfo 
 {
-    FILE *file;
+    FILE  *file;
     size_t file_size;
     char   file_size_str[ENOUGH];
 } FileInfo;

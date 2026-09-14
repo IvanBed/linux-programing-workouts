@@ -2,7 +2,7 @@ fileserver: filesystem net os_layer utils conn_pool server
 	gcc os_layer.o utils.o filesystem.o conn_pool.o net.o server.o -o fileserver
 
 server:
-	gcc -c server.c -o server.o
+	gcc -c server.c -o server.o -pthread
 
 net:
 	gcc -c net.c -o net.o

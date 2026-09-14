@@ -79,7 +79,7 @@ void send_file(int connection_sock, char const * file_path)
             send(connection_sock, file_buf, PAGESIZE, 0);
             index = 0;
             memset(file_buf, 0, PAGESIZE);
-            printf("Send %d bytes\n", index);
+            
         }
     }
     
