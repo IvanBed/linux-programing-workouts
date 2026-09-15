@@ -23,7 +23,7 @@ FileInfo *open_file(char const * file_path)
     }
 
     file_info->file_size = get_file_size(file_info->file);
-    sprintf(file_info->file_size_str, "%d\n", file_info->file_size);
+    sprintf(file_info->file_size_str, "%ld\n", file_info->file_size);
     return file_info;
 }
 

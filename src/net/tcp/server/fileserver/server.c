@@ -41,7 +41,7 @@ void signal_handler(int signal_num)
     int savedErrno;                 
     savedErrno = errno;
     if (write(p->pfd[1], "x", 1) == -1 && errno != EAGAIN)
-        exit(1);
+        exit(EXIT_FAILURE);
 
     puts("Wrote to pipe");
     errno = savedErrno;

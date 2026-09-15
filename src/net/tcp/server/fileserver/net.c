@@ -79,14 +79,13 @@ void send_file(int connection_sock, char const * file_path)
             send(connection_sock, file_buf, PAGESIZE, 0);
             index = 0;
             memset(file_buf, 0, PAGESIZE);
-            
         }
     }
     
     if (index > 1)
         send(connection_sock, file_buf, index - 1, 0);
     
-    printf("Send %d bytes\n", index - 1);
+    printf("Send %ld bytes\n", index - 1);
     close_file(file_info);
 }
 
