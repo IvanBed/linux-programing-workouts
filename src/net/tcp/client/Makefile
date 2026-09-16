@@ -1,2 +1,6 @@
 client:
-	go build client.go -o client
+	go build -o client cmd/main/client.go 
+
+init:
+	go mod init client
+	go mod tidy

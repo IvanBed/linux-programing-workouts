@@ -3,6 +3,6 @@ services:
     image: 'fileserver:latest'
     container_name: 'fileserver'
     volumes:
-      - fileserver:/
-    port:
+      - /:/host
+    ports:
       - 22007:22007

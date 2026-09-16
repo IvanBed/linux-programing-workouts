@@ -1,7 +1,11 @@
-package netutils
+package network
 
 import (
 	"bufio"
+	"client/internal/filesystem"
+
+	"sync"
+
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +14,14 @@ import (
 	"strconv"
 	"strings"
 )
+
+type VisualizationArgs struct {
+	RoutineId   int
+	SegmentSize int
+	CurrentSize int
+	LinesCnt    *int
+	EndFlag     bool
+}
 
 const Reset = "\033[0m"
 const Red = "\033[31m"
@@ -28,11 +40,13 @@ func makeConnection(ip string, port string) (net.Conn, error) {
 	return conn, nil
 }
 
-func downloadFile(reader *bufio.Reader, filePath string, fileSize int64) error {
+func downloadFile(routineId int, reader *bufio.Reader, filePath string, fileSize int64, visualizationChannel chan VisualizationArgs) error {
 
 	var writer *bufio.Writer
 	var perms os.FileMode = 0666
+	var visualization VisualizationArgs
 
+	//fmt.Println(filePath)
 	destFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, perms)
 	if err != nil {
 		fmt.Println(err)
@@ -43,12 +57,14 @@ func downloadFile(reader *bufio.Reader, filePath string, fileSize int64) error {
 	writer = bufio.NewWriter(destFile)
 	recvData := make([]byte, 4096)
 
-	segmentSize := int(fileSize / 50)
-	currentSize := 0
-	lineCnt := 0
+	visualization.RoutineId = routineId
+	visualization.SegmentSize = int(fileSize / 50)
+	visualization.LinesCnt = new(int)
+	visualization.EndFlag = false
+
 	// Добавить timeout
-	fmt.Println("Start downloading!")
-	fmt.Print("Progress: ")
+	//fmt.Println("Start downloading!")
+	//fmt.Print("Progress: ")
 	for {
 		bytes, err := reader.Read(recvData)
 		if err != nil {
@@ -61,43 +77,57 @@ func downloadFile(reader *bufio.Reader, filePath string, fileSize int64) error {
 				break
 			}
 		}
-		currentSize += bytes
+		visualization.CurrentSize += bytes
 		for i := 0; i < bytes; i++ {
 			writer.WriteByte(recvData[i])
 		}
 		writer.Flush()
-		downloadVisualization(segmentSize, currentSize, &lineCnt)
+		//fmt.Print("Channel start")
+		visualizationChannel <- visualization
+		//fmt.Print("Channel end")
 	}
-	fmt.Println(Reset, "\nDone!")
-	fmt.Println("Bytes: ", currentSize)
+	visualization.EndFlag = true
+	visualizationChannel <- visualization
+
+	//fmt.Println(Reset, "\nDone!")
+	//fmt.Println("Bytes: ", currentSize)
 	return nil
 }
 
-func getFile(conn net.Conn, srcPath string, destPath string) error {
+func GetFile(routineId int, ip string, port string, srcPath string, destPath string, visualizationChannel chan VisualizationArgs, wg *sync.WaitGroup) error {
 
 	var fileSizeStr string
 	var fileSize int64
 	var downloadedFileSize int64
+	var conn net.Conn
 
 	var request string = "GET:" + srcPath + "\n"
 	var stop string = "STOP\n"
 	var letsgo string = "GO\n"
 
 	var response string
-
 	var reader *bufio.Reader
+
+	defer wg.Done()
+
+	conn, err := makeConnection(ip, port)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Close()
 
 	reader = bufio.NewReader(conn)
 
 	conn.Write([]byte(request))
 
-	response, err := reader.ReadString('\n')
+	response, err = reader.ReadString('\n')
 	if err != nil {
 		fmt.Println("Error reading:", err.Error())
 		return err
 	}
 	if response != "OK\n" {
-		fmt.Println(response)
+		//fmt.Println(response)
 		conn.Write([]byte(stop))
 		return errors.New("err Code")
 	} else {
@@ -117,18 +147,18 @@ func getFile(conn net.Conn, srcPath string, destPath string) error {
 	fmt.Println("fileSize:", fileSize)
 	fmt.Println("filename: ", filepath.Base(srcPath))*/
 
-	destFilePath, err := makeDestFilePath(srcPath, destPath)
+	destFilePath, err := filesystem.MakeDestFilePath(srcPath, destPath)
 	if err != nil {
 		return err
 	}
 
-	err = downloadFile(reader, destFilePath, fileSize)
+	err = downloadFile(routineId, reader, destFilePath, fileSize, visualizationChannel)
 	if err != nil {
 		fmt.Println("Error downloading:", err.Error())
 		return err
 	}
 
-	downloadedFileSize, err = getFileSize(destFilePath)
+	downloadedFileSize, err = filesystem.GetFileSize(destFilePath)
 	if err != nil {
 		fmt.Println("Could not get file size:", err.Error())
 	}
@@ -136,12 +166,12 @@ func getFile(conn net.Conn, srcPath string, destPath string) error {
 	if downloadedFileSize != fileSize {
 
 	}
-	fmt.Println(downloadedFileSize)
-	fmt.Println(fileSize)
+	/*fmt.Println(downloadedFileSize)
+	fmt.Println(fileSize)*/
 
 	return nil
 }
 
-func postFile(conn net.Conn, srcPath string, destPath string) error {
+func PostFile(conn net.Conn, srcPath string, destPath string) error {
 	return nil
 }

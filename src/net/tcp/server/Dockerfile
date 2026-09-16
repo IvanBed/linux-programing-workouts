@@ -12,7 +12,7 @@ WORKDIR /usr/src/fileserver-dir
 
 COPY --from=builder /usr/src/fileserver-dir/fileserver /bin/fileserver
 
-VOLUME ["/fileserver"]
+RUN mkdir /host
 
 EXPOSE 22007
 
