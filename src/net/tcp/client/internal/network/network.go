@@ -16,11 +16,10 @@ import (
 )
 
 type VisualizationArgs struct {
-	RoutineId   int
-	SegmentSize int
-	CurrentSize int
-	LinesCnt    *int
-	EndFlag     bool
+	RoutineId     int
+	CurrentOffset int
+	TotalOffset   *int
+	EndFlag       bool
 }
 
 const Reset = "\033[0m"
@@ -46,6 +45,9 @@ func downloadFile(routineId int, reader *bufio.Reader, filePath string, fileSize
 	var perms os.FileMode = 0666
 	var visualization VisualizationArgs
 
+	var segmentSize int
+	var totalDownload int
+
 	//fmt.Println(filePath)
 	destFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, perms)
 	if err != nil {
@@ -57,14 +59,12 @@ func downloadFile(routineId int, reader *bufio.Reader, filePath string, fileSize
 	writer = bufio.NewWriter(destFile)
 	recvData := make([]byte, 4096)
 
+	segmentSize = int(fileSize / 50)
+
 	visualization.RoutineId = routineId
-	visualization.SegmentSize = int(fileSize / 50)
-	visualization.LinesCnt = new(int)
+	visualization.TotalOffset = new(int)
 	visualization.EndFlag = false
 
-	// Добавить timeout
-	//fmt.Println("Start downloading!")
-	//fmt.Print("Progress: ")
 	for {
 		bytes, err := reader.Read(recvData)
 		if err != nil {
@@ -77,20 +77,24 @@ func downloadFile(routineId int, reader *bufio.Reader, filePath string, fileSize
 				break
 			}
 		}
-		visualization.CurrentSize += bytes
+		totalDownload += bytes
 		for i := 0; i < bytes; i++ {
 			writer.WriteByte(recvData[i])
 		}
 		writer.Flush()
 		//fmt.Print("Channel start")
-		visualizationChannel <- visualization
+		if totalDownload >= *visualization.TotalOffset*segmentSize {
+			visualization.CurrentOffset = 1
+			visualizationChannel <- visualization
+		}
+
 		//fmt.Print("Channel end")
 	}
 	visualization.EndFlag = true
 	visualizationChannel <- visualization
 
 	//fmt.Println(Reset, "\nDone!")
-	//fmt.Println("Bytes: ", currentSize)
+	//fmt.Println("Bytes: ", CurrentOffset)
 	return nil
 }
 

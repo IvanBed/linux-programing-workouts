@@ -5,6 +5,13 @@ import (
 	"fmt"
 )
 
+type VisualizationArgs struct {
+	RoutineId     int
+	CurrentOffset int
+	TotalOffset   *int
+	EndFlag       bool
+}
+
 func allRoutineDone(routinesStatus []bool) bool {
 	for _, val := range routinesStatus {
 		if val == false {
@@ -18,54 +25,115 @@ func DownloadVisualization(ch chan network.VisualizationArgs, routinesCnt int) {
 
 	var args network.VisualizationArgs
 	var routinesStatus []bool
-	var prevRoutineId int = -1
-	var offset int
+
 	routinesStatus = make([]bool, routinesCnt)
 
 	for !allRoutineDone(routinesStatus) {
 		select {
 		case args = <-ch:
 			if !args.EndFlag {
-				prevRoutineId, offset = downloadVisualizationInternal(args.SegmentSize, args.CurrentSize, args.LinesCnt, args.RoutineId, routinesCnt, prevRoutineId, offset)
+				downloadVisualizationInternalNew(args.CurrentOffset, args.TotalOffset, args.RoutineId, routinesCnt)
 			} else {
 				routinesStatus[args.RoutineId] = true
 			}
 		}
 	}
+	for i := 0; i < routinesCnt; i++ {
+		fmt.Println("")
+	}
 }
 
-func downloadVisualizationInternal(segmentSize int, currentSize int, linesCnt *int, routineId int, routinesCnt int, prevRoutineId int, offset int) (int, int) {
+func findCursorPos(offset int) {
+	var pos string
+	pos = fmt.Sprintf("\033[%dG", offset)
+	fmt.Printf(pos)
+}
 
-	if *linesCnt == 0 || *linesCnt*segmentSize <= currentSize {
-		if prevRoutineId != -1 {
-			if prevRoutineId != routineId {
-				for i := 0; i < offset; i++ {
-					fmt.Print("\033[D")
-				}
-				offset = 0
-			} else {
-				offset++
-			}
+func downloadVisualizationInternal(CurrentOffset int, TotalOffset *int, routineId int, routinesCnt int) {
+	var offset int = CurrentOffset + *TotalOffset
+	var tempalte string
+	var tempLen int = 0
+
+	switch routineId {
+	case 0:
+		if offset == 1 {
+			tempalte = fmt.Sprintf("File №%d ", routineId)
+			findCursorPos(1)
+			fmt.Print(network.Reset, tempalte)
+			tempLen = len(tempalte)
+			offset += tempLen
 		}
-		switch routineId {
-		case 0:
-			fmt.Print(network.Green, "#")
-		case 1:
-			fmt.Print(network.Green, "\033[B", "#")
-			fmt.Print("\033[A")
-		case 2:
-			fmt.Print(network.Green, "\033[B", "\033[B", "#")
-			fmt.Print("\033[A", "\033[A")
+		findCursorPos(offset)
+		fmt.Print(network.Green, "#")
+		if offset == 51 {
+			fmt.Print(network.Reset, " Ok!")
 		}
-		*linesCnt++
+	case 1:
+		fmt.Print("\033[B")
+		if offset == 1 {
+			tempalte = fmt.Sprintf("File №%d ", routineId)
+			findCursorPos(1)
+			fmt.Print(network.Reset, tempalte)
+			offset += len(tempalte)
+			tempLen = len(tempalte)
+		}
+		findCursorPos(offset)
+		fmt.Print(network.Green, "#")
+
+		if offset == 51 {
+			fmt.Print(network.Reset, " Ok!")
+		}
+		fmt.Print("\033[A")
+	case 2:
+		fmt.Print("\033[B", "\033[B")
+		if offset == 1 {
+			tempalte = fmt.Sprintf("File №%d ", routineId)
+			findCursorPos(1)
+			fmt.Print(network.Reset, tempalte)
+			offset += len(tempalte)
+			tempLen = len(tempalte)
+		}
+		findCursorPos(offset)
+		fmt.Print(network.Green, "#")
+
+		if offset == 51 {
+			fmt.Print(network.Reset, " Ok!")
+		}
+		fmt.Print("\033[A", "\033[A")
 	}
 
-	for i := 0; i < routinesCnt; i++ {
+	//findCursorPosNew(routineId+10, CurrentOffset+*TotalOffset)
+	//fmt.Print(network.Green, "#")
+	*TotalOffset += CurrentOffset + tempLen
+}
+
+func downloadVisualizationInternalNew(CurrentOffset int, TotalOffset *int, routineId int, routinesCnt int) {
+
+	var offset int = CurrentOffset + *TotalOffset
+	var tempalte string
+	var tempLen int = 0
+
+	for i := 0; i < routineId; i++ {
 		fmt.Print("\033[B")
 	}
-	return routineId, offset
-}
 
-func Test() {
+	if offset == 1 {
+		tempalte = fmt.Sprintf("File №%d ", routineId)
+		findCursorPos(1)
+		fmt.Print(network.Reset, tempalte)
+		tempLen = len(tempalte)
+		offset += tempLen
+	}
+	findCursorPos(offset)
+	fmt.Print(network.Green, "#")
 
+	if offset == 51 {
+		fmt.Print(network.Reset, " Ok!")
+	}
+
+	for i := 0; i < routineId; i++ {
+		fmt.Print("\033[A")
+	}
+
+	*TotalOffset += CurrentOffset + tempLen
 }
