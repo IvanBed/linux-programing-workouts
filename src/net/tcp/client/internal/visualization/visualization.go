@@ -38,9 +38,7 @@ func DownloadVisualization(ch chan network.VisualizationArgs, routinesCnt int) {
 			}
 		}
 	}
-	for i := 0; i < routinesCnt; i++ {
-		fmt.Println("")
-	}
+
 }
 
 func findCursorPos(offset int) {

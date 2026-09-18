@@ -32,6 +32,10 @@ func startRoutins(opType string, ip string, port string, srcPathes string, destP
 	}
 	wg.Wait()
 	close(visualizationChannel)
+	fmt.Print(fmt.Sprintf("\033[%dG", 1))
+	for i := 0; i < len(pathTokens); i++ {
+		fmt.Print("\033[B")
+	}
 }
 
 func main() {

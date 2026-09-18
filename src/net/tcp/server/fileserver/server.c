@@ -127,13 +127,12 @@ int64_t start_client_serving_routin(ConnectionsPool *pool, WorkerArgs *args, int
         return NOT_OK;
     }
 
-    pthread_mutex_lock(&(pool->lock));
+    
     puts("store_connection");
     offset = store_connection(pool, thread_id, connection_sock);
     if (offset == NOT_OK)
     {
         res = offset;
-        pthread_mutex_unlock(&(pool->lock));
         return NOT_OK;
     } 
 
@@ -141,12 +140,11 @@ int64_t start_client_serving_routin(ConnectionsPool *pool, WorkerArgs *args, int
     if (pthread_create(&thread_id, NULL, client_serving, (void*)(&args[offset])) != 0)
     {
         release_connection(pool, offset);
-        pthread_mutex_unlock(&(pool->lock));
         return NOT_OK;
     }
 
     pthread_detach(thread_id);
-    pthread_mutex_unlock(&(pool->lock));
+    
     return res;
 }
 
@@ -169,6 +167,8 @@ int64_t main_loop(int server_sock, size_t max_connections)
     int               nfds = 2;
     ConnectionsPool  *pool;
     WorkerArgs        args[THREAD_LIMIT];
+    int               start_client_serving_res;
+
 
     pool = create_conn_pool(max_connections);
     if (!pool)
@@ -198,7 +198,7 @@ int64_t main_loop(int server_sock, size_t max_connections)
 
         if (FD_ISSET(p->pfd[0], &working_set)) 
         {  
-            printf("A signal was caught\n");
+            puts("A signal was caught");
 
             for (;;) 
             {                      /* Consume bytes from pipe */
@@ -209,7 +209,7 @@ int64_t main_loop(int server_sock, size_t max_connections)
                         break;              
 
                 }
-                printf("goto end_loop\n");
+                puts("goto end_loop");
                 goto end_loop;
             }
         }
@@ -220,7 +220,14 @@ int64_t main_loop(int server_sock, size_t max_connections)
             //FD_SET(connection_sock, &working_set);
             if (connection_sock != -1) 
            {
-                while (start_client_serving_routin(pool, args, connection_sock) == NOT_OK && attempts++ < MAX_ATTEMPS) {}
+                pthread_mutex_lock(&(pool->lock));
+                while (pool_is_full(pool) /*&& attempts++ < MAX_ATTEMPS*/) 
+                {
+                    pthread_cond_wait(&(pool->is_free_cond), &(pool->lock));
+                }
+
+                start_client_serving_res = start_client_serving_routin(pool, args, connection_sock);
+                pthread_mutex_unlock(&(pool->lock));
                 puts("accept");
             }  
         }        

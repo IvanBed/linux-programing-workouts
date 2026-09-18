@@ -24,6 +24,7 @@ typedef struct ConnectionsPool
     size_t          size;
     pthread_mutex_t lock;
     pthread_cond_t  cond;
+    pthread_cond_t  is_free_cond;
     int64_t         free_space_bitmap; 
 } ConnectionsPool;
 
@@ -39,5 +40,5 @@ ConnectionsPool *create_conn_pool(size_t size);
 void destruct_conn_pool(ConnectionsPool *store);
 int bitmap_contain(int64_t bitmap, int64_t offset);
 int pool_is_free(ConnectionsPool *pool);
-
+int pool_is_full(ConnectionsPool *pool);
 #endif
