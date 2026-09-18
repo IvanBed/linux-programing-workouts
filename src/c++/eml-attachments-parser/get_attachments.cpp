@@ -160,17 +160,6 @@ static std::vector<std::string> split_line(std::string const & line, std::vector
     return res;
 }
 
-static std::string check_unix_filename(std::string const & filename)
-{
-	std::string res = "";
-	for (size_t i = 0; i < filename.size(); i++)
-	{
-		
-		
-	}
-	return res;
-}
-
 static std::vector<std::string> get_encoded_line_tokens(std::string const & line, char separator)
 {
     std::vector<std::string> res(3, "");
