@@ -580,15 +580,15 @@ int main(int argc, char *argv[])
         if (regex_search(line, attach_pattern))
         {
             attach_found = true;
-            std::cout << "attachment found " << line  << std::endl;
+            //std::cout << "attachment found " << line  << std::endl;
         }
 
         if (attach_found && attach_body_start_found)
         {
-            
-		    if (/*line.find(cur_boundary) != std::string::npos*/ || empty_line(line) || contain_any_boundary(boundaries, line)) 
+            //line.find(cur_boundary) != std::string::npos ||
+		    if (empty_line(line) || contain_any_boundary(boundaries, line)) 
             {
-                std::cout << "cur_boundary: "<< cur_boundary << "\n";
+                //std::cout << "cur_boundary: "<< cur_boundary << "\n";
 				attach_found            = false;
                 attach_body_start_found = false;
 				attachments_cnt++;
@@ -605,7 +605,7 @@ int main(int argc, char *argv[])
 
                 //Из токенов файлов собираем название файла и декодируем его в зависимости от кодировки
                 attach_filename = get_attach_filename(filename_tokens);
-                std::cout << "attach_filename 111: " << attach_filename << std::endl;
+                //std::cout << "attach_filename 111: " << attach_filename << std::endl;
                 //std::cout << "decoded_attachment_data: " << decoded_attachment_data << std::endl;
 				if (attach_filename.empty())
 					attach_filename = "temp" + std::to_string(attachments_cnt);
@@ -622,7 +622,7 @@ int main(int argc, char *argv[])
                     default:
                         break;
                 }
-                std::cout << "attach_filename after decode: " << attach_filename << std::endl;
+                //std::cout << "attach_filename after decode: " << attach_filename << std::endl;
                 if (!save_str_to_file(attach_filename, decoded_attachment_data))
 				{
 					std::cout << "Could not save the attachment!\n";
