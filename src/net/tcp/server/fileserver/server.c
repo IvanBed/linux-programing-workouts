@@ -48,7 +48,7 @@ void signal_handler(int signal_num)
     puts("Flag exit_signal is TRUE.");
 }
 
-void start_service(int connection_sock)
+void serve_connection(int connection_sock)
 {
     ssize_t        recv_cnt;
     char           request[BUFSIZE];
@@ -92,7 +92,7 @@ void* client_serving(void* data)
     args = (WorkerArgs*) data;
     conn_desc = args->connections_pool->connections[args->offset];
     //puts("start service");
-    start_service(conn_desc.connection_sock);
+    serve_connection(conn_desc.connection_sock);
     pthread_mutex_lock(&(args->connections_pool->lock));
     //puts("release connection");
     release_res = release_connection(args->connections_pool, conn_desc.offset);
