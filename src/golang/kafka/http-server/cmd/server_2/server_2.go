@@ -13,9 +13,9 @@ import (
 )
 
 type ButtonsEvents struct {
-	buttonId   int
-	buttonName string
-	clicksCnt  int
+	buttonId    int
+	buttoanName string
+	clicksCnt   int
 }
 
 type ProduceState struct {
@@ -43,7 +43,7 @@ func (ps *ProduceState) Close() {
 
 func (this *ProduceState) writeAsync(be ButtonsEvents) {
 	select {
-	case this.AsynProducer.Input() <- &sarama.ProducerMessage{Topic: "buttons_events", Key: sarama.StringEncoder(be.buttonName), Value: sarama.StringEncoder(be.clicksCnt)}:
+	case this.AsynProducer.Input() <- &sarama.ProducerMessage{Topic: "my_topic", Key: sarama.StringEncoder(be.buttoanName), Value: sarama.StringEncoder(be.clicksCnt)}:
 
 	case err := <-this.AsynProducer.Errors():
 		log.Println("Failed to produce message", err)
@@ -86,7 +86,6 @@ func buttonsEventsHandler(ch chan ButtonsEvents) http.HandlerFunc {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("Send data to topic buttons_events")
 		ch <- be
 	}
 }
@@ -101,7 +100,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	var wg sync.WaitGroup
+	var wg *sync.WaitGroup
 	var producerState *ProduceState
 	args := os.Args
 
@@ -111,8 +110,8 @@ func main() {
 
 	kafkaHost := args[1]
 	kafkaPort := args[2]
-	//APIHost := args[3]
-	APIPort := args[3]
+	APIHost := args[3]
+	APIPort := args[4]
 
 	producerState, err := NewProduceState(kafkaHost, kafkaPort)
 	if err != nil {
@@ -121,15 +120,13 @@ func main() {
 	defer producerState.Close()
 
 	wg.Add(1)
-	go producerState.mainLoop(&wg)
+	go producerState.mainLoop(wg)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/post_buttons_events", buttonsEventsHandler(producerState.InputCh))
 	loggedMux := loggingMiddleware(mux)
 
-	fmt.Println(":" + APIPort)
-
-	err = http.ListenAndServe(":"+APIPort, loggedMux)
+	err = http.ListenAndServe(APIHost+":"+APIPort, loggedMux)
 	if err != nil {
 		log.Printf("")
 	}
@@ -138,5 +135,3 @@ func main() {
 	wg.Wait()
 	return
 }
-
-//curl -d '{"buttonId":"1", "buttonName":"test", "clicksCnt":"1"}' -H "Content-Type: application/json" -X POST http://localhost:22007/post_buttons_events

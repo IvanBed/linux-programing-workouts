@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -18,21 +18,38 @@ type ButtonsEvents struct {
 	clicksCnt   int
 }
 
-type ProducePostReq struct {
-	producer sarama.AsyncProducer
+type ProduceState struct {
+	AsynProducer sarama.AsyncProducer
+	Mtx          sync.Mutex
 }
 
-func (this *ProducePostReq) write(be ButtonsEvents) {
+func NewProduceState(host string, port string) (*ProduceState, error) {
 
+	var ps *ProduceState
+	asyncProducer, err := sarama.NewAsyncProducer([]string{host + ":" + port}, nil)
+	if err != nil {
+		return nil, err
+	}
+	ps = &ProduceState{AsynProducer: asyncProducer}
+	return ps, nil
+}
+
+func (ps *ProduceState) Close() {
+	ps.AsynProducer.Close()
+}
+
+func (this *ProduceState) writeAsync(be ButtonsEvents) {
+	this.Mtx.Lock()
 	select {
-	case this.producer.Input() <- &sarama.ProducerMessage{Topic: "my_topic", Key: sarama.StringEncoder(be.buttoanName), Value: sarama.StringEncoder(be.clicksCnt)}:
+	case this.AsynProducer.Input() <- &sarama.ProducerMessage{Topic: "my_topic", Key: sarama.StringEncoder(be.buttoanName), Value: sarama.StringEncoder(be.clicksCnt)}:
 
-	case err := <-this.producer.Errors():
+	case err := <-this.AsynProducer.Errors():
 		log.Println("Failed to produce message", err)
 	}
+	this.Mtx.Unlock()
 }
 
-func (this *ProducePostReq) buttonsEventsHandler(w http.ResponseWriter, r *http.Request) {
+func (this *ProduceState) buttonsEventsHandler(w http.ResponseWriter, r *http.Request) {
 
 	var be ButtonsEvents
 
@@ -47,19 +64,13 @@ func (this *ProducePostReq) buttonsEventsHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	name := r.FormValue("name")
-	fmt.Fprintf(w, "Hello, %s!", name)
 	decoder := json.NewDecoder(r.Body)
-
 	err = decoder.Decode(&be)
 	if err != nil {
 		panic(err)
 	}
 
-	this.write(be)
-
-	log.Println(be.buttoanName)
-	log.Println(be.clicksCnt)
+	this.writeAsync(be)
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -73,38 +84,29 @@ func loggingMiddleware(next http.Handler) http.Handler {
 
 func main() {
 
+	var producerState *ProduceState
 	args := os.Args
 
 	if len(args) < 3 {
 		fmt.Println("")
 	}
 
-	host := args[1]
-	port := args[2]
+	kafkaHost := args[1]
+	kafkaPort := args[2]
+	APIHost := args[3]
+	APIPort := args[4]
 
-	producer, err := sarama.NewAsyncProducer([]string{host + ":" + port}, nil)
+	producerState, err := NewProduceState(kafkaHost, kafkaPort)
 	if err != nil {
 		panic(err)
 	}
-	defer producer.Close()
-	defer func() {
-		if err := producer.Close(); err != nil {
-			log.Fatalln(err)
-		}
-	}()
-
-	// Trap SIGINT to trigger a shutdown.
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt)
-	defer close(signals)
-
-	// Оборачиваем mux в middleware
+	defer producerState.Close()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/post_buttons_events", buttonsEventsHandler)
-
+	mux.HandleFunc("/post_buttons_events", producerState.buttonsEventsHandler)
 	loggedMux := loggingMiddleware(mux)
-	err = http.ListenAndServe(`:8080`, loggedMux)
+
+	err = http.ListenAndServe(APIHost+":"+APIPort, loggedMux)
 	if err != nil {
 		panic(err)
 	}
