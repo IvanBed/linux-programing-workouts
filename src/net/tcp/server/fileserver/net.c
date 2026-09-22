@@ -1,14 +1,14 @@
 #include "include/filesystem.h"
 #include "include/net.h"
 
-void init_addr_ipinet(struct sockaddr_in *addr, char *ip, int port)
+void init_addr_ipinet(struct sockaddr_in *addr, char const *ip, int port)
 {
     inet_aton(ip, &(addr->sin_addr));
     addr->sin_port = htons(port);
     addr->sin_family = AF_INET;
 }
 
-int create_server(char *ip_address, int port)
+int create_server(char const *ip_address, int port)
 {
     int    server_sock;
     struct sockaddr_in local;

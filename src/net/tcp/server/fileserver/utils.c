@@ -21,7 +21,7 @@ static void add_elemnt(char **tokens, char *str, size_t tokens_indx, size_t star
     }
 }
 
-enum Operation get_op_type(char *const request) 
+enum Operation get_op_type(char const * request) 
 {
     if (strncmp(request, "GET", 3) == 0) 
         return GET;
