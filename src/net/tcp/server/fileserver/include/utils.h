@@ -15,7 +15,7 @@ enum Operation
 
 char **parse_request(char *str, size_t *out_token_cnt);
 void free_args_list(char **args_list, size_t size);
-enum Operation get_op_type(char *const request);
+enum Operation get_op_type(char const * request) ;
 
 #endif
 
