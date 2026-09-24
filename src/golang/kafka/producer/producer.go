@@ -77,17 +77,20 @@ func buttonsEventsHandler(ch chan ButtonsEvents) http.HandlerFunc {
 
 		err := r.ParseForm()
 		if err != nil {
-			fmt.Fprintf(w, "Error parsing form: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		decoder := json.NewDecoder(r.Body)
 		err = decoder.Decode(&be)
 		if err != nil {
-			panic(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		fmt.Println("Send data to topic buttons_events")
 		ch <- be
+		w.WriteHeader(http.StatusOK)
+
 	}
 }
 
