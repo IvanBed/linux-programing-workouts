@@ -1,57 +1,60 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/IBM/sarama"
 )
 
-type ButtonsEvents struct {
+type ButtonEvents struct {
 	buttonId   int
 	buttonName string
 	clicksCnt  int
 }
 
-type ProduceState struct {
+type ProducerState struct {
 	AsynProducer sarama.AsyncProducer
-	InputCh      chan ButtonsEvents
+	InputCh      chan ButtonEvents
 	EndCh        chan bool
 }
 
-func NewProduceState(host string, port string) (*ProduceState, error) {
+func NewProducerState(host string, port string) (*ProducerState, error) {
 
-	var ps *ProduceState
+	var ps *ProducerState
 	asyncProducer, err := sarama.NewAsyncProducer([]string{host + ":" + port}, nil)
 	if err != nil {
 		return nil, err
 	}
-	inputCh := make(chan ButtonsEvents, 0)
+	inputCh := make(chan ButtonEvents, 0)
 	endCh := make(chan bool, 0)
-	ps = &ProduceState{AsynProducer: asyncProducer, InputCh: inputCh, EndCh: endCh}
+	ps = &ProducerState{AsynProducer: asyncProducer, InputCh: inputCh, EndCh: endCh}
 	return ps, nil
 }
 
-func (ps *ProduceState) Close() {
+func (ps *ProducerState) Close() {
 	ps.AsynProducer.Close()
 }
 
-func (this *ProduceState) writeAsync(be ButtonsEvents) {
+func (this *ProducerState) writeAsync(be ButtonEvents) {
 	select {
-	case this.AsynProducer.Input() <- &sarama.ProducerMessage{Topic: "buttons_events", Key: sarama.StringEncoder(be.buttonName), Value: sarama.StringEncoder(be.clicksCnt)}:
+	case this.AsynProducer.Input() <- &sarama.ProducerMessage{Topic: "buttons_events", Key: sarama.StringEncoder(be.buttonId) + ":" + be.buttonName, Value: sarama.StringEncoder(be.clicksCnt)}:
 
 	case err := <-this.AsynProducer.Errors():
 		log.Println("Failed to produce message", err)
 	}
 }
 
-func (this *ProduceState) mainLoop(wg *sync.WaitGroup) {
-	var be ButtonsEvents
+func (this *ProducerState) mainLoop(wg *sync.WaitGroup) {
+	var be ButtonEvents
 	defer wg.Done()
 
 	for {
@@ -64,11 +67,11 @@ func (this *ProduceState) mainLoop(wg *sync.WaitGroup) {
 	}
 }
 
-func buttonsEventsHandler(ch chan ButtonsEvents) http.HandlerFunc {
+func ButtonEventsHandler(ch chan ButtonEvents) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var be ButtonsEvents
+		var be ButtonEvents
 
 		if r.Method != http.MethodPost {
 			http.Error(w, "Only POST requests are allowed!", http.StatusMethodNotAllowed)
@@ -90,7 +93,6 @@ func buttonsEventsHandler(ch chan ButtonsEvents) http.HandlerFunc {
 		fmt.Println("Send data to topic buttons_events")
 		ch <- be
 		w.WriteHeader(http.StatusOK)
-
 	}
 }
 
@@ -105,21 +107,30 @@ func loggingMiddleware(next http.Handler) http.Handler {
 
 func main() {
 	var wg sync.WaitGroup
-	var producerState *ProduceState
+	var producerState *ProducerState
 	args := os.Args
 
 	if len(args) < 3 {
-		fmt.Println("")
+		fmt.Println("Please specify the Kafka IP address and port")
+		return
 	}
+	if len(args) < 4 {
+		fmt.Println("Please specify the API port")
+		return
+	}
+
+	signalContex, stop := signal.NotifyContext(
+		context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
 	kafkaHost := args[1]
 	kafkaPort := args[2]
-	//APIHost := args[3]
 	APIPort := args[3]
 
-	producerState, err := NewProduceState(kafkaHost, kafkaPort)
+	producerState, err := NewProducerState(kafkaHost, kafkaPort)
 	if err != nil {
-		log.Printf("")
+		fmt.Println("Could not create ProducerState")
+		//log.Printf("")
 	}
 	defer producerState.Close()
 
@@ -127,18 +138,18 @@ func main() {
 	go producerState.mainLoop(&wg)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/post_buttons_events", buttonsEventsHandler(producerState.InputCh))
+	mux.HandleFunc("/post_buttons_events", ButtonEventsHandler(producerState.InputCh))
 	loggedMux := loggingMiddleware(mux)
-
-	fmt.Println(":" + APIPort)
 
 	err = http.ListenAndServe(":"+APIPort, loggedMux)
 	if err != nil {
 		log.Printf("")
 	}
 
+	<-signalContex.Done()
 	producerState.EndCh <- true
 	wg.Wait()
+
 	return
 }
 

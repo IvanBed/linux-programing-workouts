@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type ButtonsEvents struct {
+type ButtonEvents struct {
 	buttonId   int
 	buttonName string
 	clicksCnt  int
@@ -37,7 +37,7 @@ func getConfigFromEnvs() (pgxpool.Config, error) {
 	return config, nil
 }
 
-func InitFromEnvs() error {
+func InitConnsPoolFromEnvs() error {
 	config, err := getConfigFromEnvs()
 	if err != nil {
 		return err
@@ -75,34 +75,38 @@ func Healthcheck() bool {
 	}
 }
 
-func StoreButtonInfo(ctx context.Context, bi ButtonsEvents) error {
+func StoreButtonEvents(ctx context.Context, beBatch []ButtonEvents, errors chan error) {
 	connection, err := pool.Acquire(ctx)
 	if err != nil {
-		return err
+		errors <- err
+		return
 	}
 	defer connection.Release()
 
 	tx := connection.Begin(ctx)
 
-	buttonIdRow := tx.QueryRow(ctx, "SELECT id FROM ButtonsInfo", bi.buttonId)
-	var id int64
-	err = buttonIdRow.Scan(&id)
-	if err != nil {
-		_, err = tx.Exec(ctx, "INSERT INTO ButtonsInfo VALUES(?, ?, ?)", bi.buttonId, bi.buttonName, bi.clicksCnt)
+	for _, be := range beBatch {
+		buttonIdRow := tx.QueryRow(ctx, "SELECT id FROM ButtonsInfo", be.buttonId)
+		var id int64
+		err = buttonIdRow.Scan(&id)
 		if err != nil {
-			tx.Rollback(ctx)
-			return err
-		}
-	} else {
-		_, err = tx.Exec(ctx, "UPDATE ButtonsInfo SET activity = activity + ? WHERE id = ?", bi.clicksCnt, bi.buttonId)
-		if err != nil {
-			tx.Rollback(ctx)
-			return err
+			_, err = tx.Exec(ctx, "INSERT INTO ButtonsInfo VALUES(?, ?, ?)", be.buttonId, be.buttonName, be.clicksCnt)
+			if err != nil {
+				errors <- err
+				tx.Rollback(ctx)
+				return
+			}
+		} else {
+			_, err = tx.Exec(ctx, "UPDATE ButtonsInfo SET activity = activity + ? WHERE id = ?", be.clicksCnt, be.buttonId)
+			if err != nil {
+				errors <- err
+				tx.Rollback(ctx)
+				return
+			}
 		}
 	}
-
 	tx.Commit(ctx)
-	return nil
+
 }
 
 //(pool *pgxpool.Pool)
