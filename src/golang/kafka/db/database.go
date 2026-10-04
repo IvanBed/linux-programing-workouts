@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -75,11 +77,11 @@ func Healthcheck() bool {
 	}
 }
 
-func StoreButtonEvents(ctx context.Context, beBatch []ButtonEvents, errors chan error) {
+func StoreButtonEvents(ctx context.Context, beBatch []ButtonEvents) error {
+
 	connection, err := pool.Acquire(ctx)
 	if err != nil {
-		errors <- err
-		return
+		return err
 	}
 	defer connection.Release()
 
@@ -90,22 +92,32 @@ func StoreButtonEvents(ctx context.Context, beBatch []ButtonEvents, errors chan 
 		var id int64
 		err = buttonIdRow.Scan(&id)
 		if err != nil {
-			_, err = tx.Exec(ctx, "INSERT INTO ButtonsInfo VALUES(?, ?, ?)", be.buttonId, be.buttonName, be.clicksCnt)
-			if err != nil {
-				errors <- err
-				tx.Rollback(ctx)
-				return
-			}
-		} else {
 			_, err = tx.Exec(ctx, "UPDATE ButtonsInfo SET activity = activity + ? WHERE id = ?", be.clicksCnt, be.buttonId)
 			if err != nil {
-				errors <- err
 				tx.Rollback(ctx)
-				return
+				return err
+			}
+		} else {
+			_, err = tx.Exec(ctx, "INSERT INTO ButtonsInfo VALUES(?, ?, ?)", be.buttonId, be.buttonName, be.clicksCnt)
+			if err != nil {
+				tx.Rollback(ctx)
+				return err
 			}
 		}
 	}
 	tx.Commit(ctx)
+	return nil
+}
+
+func StoreButtonEventsAsync(ctx context.Context, beBatch []ButtonEvents, errors chan error, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+	err := StoreButtonEvents(ctx, beBatch)
+	if err != nil {
+		errors <- err
+	}
 
 }
 

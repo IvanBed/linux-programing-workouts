@@ -71,14 +71,26 @@ func parseButtonEvents(key, value []byte) (ButtonEvents, error) {
 	return be, nil
 }
 
-func mainLoop(consumerState *ConsumerState, batchSize int, errCh chan error, wg *sync.WaitGroup) {
+func storeBatchAsync(batch []ButtonEvents, errCh chan error, wg *sync.WaitGroup) int {
+	wg.Add(1)
+
+	go database.StoreButtonEventsAsync(context.Background(), slices.Clone(batch), errCh, wg)
+	clear(batch)
+	return 0
+}
+
+func mainLoop(consumerState *ConsumerState, batchSize int, ticksFreq time.Duration, errCh chan error, wg *sync.WaitGroup) {
 	defer func() {
 		close(errCh)
 		wg.Done()
 	}()
 
 	batch := make([]ButtonEvents, batchSize)
-	timer := time.NewTimer(16 * time.Millisecond)
+	batchIdx := 0
+
+	ticker := time.NewTicker(ticksFreq * time.Second)
+
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -93,8 +105,7 @@ func mainLoop(consumerState *ConsumerState, batchSize int, errCh chan error, wg 
 			}
 
 			if len(batch) == batchSize {
-				go database.StoreButtonEvents(context.Background(), slices.Clone(batch), errCh)
-				clear(batch)
+				batchIdx = storeBatchAsync(batch, errCh, wg)
 			}
 
 			be, err := parseButtonEvents(msg.Key, msg.Value)
@@ -102,12 +113,10 @@ func mainLoop(consumerState *ConsumerState, batchSize int, errCh chan error, wg 
 				fmt.Println("Could not parse the message from Kafka, check the next")
 				continue
 			}
-			batch = append(batch, be)
+			batch[batchIdx] = be
 
-		case <-timer.C:
-			go database.StoreButtonEvents(context.Background(), slices.Clone(batch), errCh)
-			timer.Reset()
-			clear(batch)
+		case <-ticker.C:
+			batchIdx = storeBatchAsync(batch, errCh, wg)
 		}
 	}
 }
@@ -126,6 +135,7 @@ func printErrors(errorsStore []error) {
 func main() {
 
 	var batchSize int
+	var ticksFreq time.Duration
 	var errStore []error
 	var errCh chan error
 	var wg sync.WaitGroup
@@ -162,12 +172,13 @@ func main() {
 	errStore = make([]error, 0)
 	errCh = make(chan error, 0)
 	batchSize = 16
+	ticksFreq = 10
 
 	wg.Add(2)
 	fmt.Println("Start error handling routine")
 	go errorHandle(errCh, errStore, &wg)
 	fmt.Println("Start consumer main loop")
-	go mainLoop(consumerState, batchSize, errCh, &wg)
+	go mainLoop(consumerState, batchSize, ticksFreq, errCh, &wg)
 
 	fmt.Println("Programm is running...")
 	<-signalContex.Done()
