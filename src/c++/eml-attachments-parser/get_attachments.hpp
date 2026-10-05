@@ -35,6 +35,7 @@
     #define DESCRIPTION_PATTERN "Content-Description:*"
     
     
+    #define LIKE_BOUNDARY ""  
     #define RFC2047HINT "=\?.*\?="
     #define RFC2231HINT ".*'.*'.*"
 
