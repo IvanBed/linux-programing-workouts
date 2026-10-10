@@ -11,6 +11,8 @@
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 
+#include "include/filesystem.h"
+
 void init_addr_ipinet(struct sockaddr_in *addr, char const *ip, int port);
 void send_file(int connection_sock, char const * file_path);
 void get_file(int connection_sock, char const * file_path, char const * dest_path);
