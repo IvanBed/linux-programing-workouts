@@ -11,6 +11,8 @@
 #include <unistd.h>
 
 #define PATH_SIZE 4096
+#define PAGESIZE 4096
+
 #define NO_ERR 0
 #define DIR_OPEN_ERR 1
 

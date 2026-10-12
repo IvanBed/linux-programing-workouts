@@ -1,8 +1,26 @@
 #include "include/log.h"
 
+void arch_logs(char const *log_dir)
+{
+    char        arch_dir[PATH_SIZE];
+    char const *pattern = "fileserver.log"
+
+    snprintf(arch_dir, PATH_SIZE, "%s/%s\0", arch_dir, "arch");
+
+    if (!check_dir(arch_dir))
+    {
+        create_dir(arch_dir);
+    }
+
+    move_files_to_dir(log_dir, arch_dir, pattern, strlen(pattern));
+
+}
+
 log_desc *create_log(char const *log_dir)
 {
-    //check_log_file
+    FILE log_file;
+    char log_name[PATH_SIZE];
+
     log_desc * l = malloc(sizeof(log_desc));
     if (!l)
     {
@@ -18,10 +36,16 @@ log_desc *create_log(char const *log_dir)
         return;
     }
 
-    check_log_dir(log_dir)
+    arch_logs(log_dir);
 
+    snprintf(log_name, PATH_SIZE, "%s/s.%ld\0", log_dir, "fileserver.log", (unsigned long)time(NULL));
+    log_file = fopen(log_name);
 
-    
+    l->log_queue = lq;
+    l->file_desc = log_file;
+
+    return log_desc;
+
 }
 
 void destroy_log(log_desc * log_inst)
