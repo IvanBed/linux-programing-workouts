@@ -26,6 +26,7 @@ typedef struct message_desc
     int                  error_code;
     log_level            level;
     time_t               message_time;
+    pthread_t            tid;
     
 } message_desc;
 
@@ -53,6 +54,7 @@ typedef struct log_message_queue
                         
 } log_message_queue;
 
-
+void push_message(log_message_queue *log_queue, message_desc const *msg_desc);
+void pop_message(log_message_queue *log_queue, message_desc *local_msg_desc);
 
 #endif

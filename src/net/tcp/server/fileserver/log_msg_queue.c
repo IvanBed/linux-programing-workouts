@@ -28,7 +28,7 @@ static log_message_queue *create_log_queue(size_t max_size)
     log_queue->tail = NULL;
     log_queue->size = 0;
     log_queue->capacity = max_size;
-    log_queue->critical_size = ATOMIC_VAR_INIT(true);; 
+    log_queue->critical_size = true; 
     
     if (pthread_mutex_init(&log_queue->mtx, NULL) !=  0)
     {
@@ -123,7 +123,7 @@ static void delete_head(log_message_queue *log_queue)
 }
 
 
-static void push_message(log_message_queue *log_queue, message_desc const *msg_desc)
+void push_message(log_message_queue *log_queue, message_desc const *msg_desc)
 {
     if (!log_queue || !msg_desc)
     {
@@ -142,7 +142,7 @@ static void push_message(log_message_queue *log_queue, message_desc const *msg_d
     pthread_mutex_unlock(&log_queue->mtx);
 }
 
-static void pop_message(log_message_queue *log_queue, message_desc *local_msg_desc)
+void pop_message(log_message_queue *log_queue, message_desc *local_msg_desc)
 {
     pthread_mutex_lock(&log_queue->mtx);
     while(log_queue->size == 0)
@@ -155,13 +155,6 @@ static void pop_message(log_message_queue *log_queue, message_desc *local_msg_de
     pthread_mutex_unlock(&log_queue->mtx);
 }
 
-static int write_file(FILE file_desc, message_desc *msg_desc)
-{
-
-
-    return 0;
-}
-
 static void print_queue(log_message_queue *log_queue)
 {
     queue_node *node = log_queue->tail;
@@ -171,5 +164,4 @@ static void print_queue(log_message_queue *log_queue)
         printf("%s ", node->msg_desc.message);
         node = node->next;
     }
-    
 }

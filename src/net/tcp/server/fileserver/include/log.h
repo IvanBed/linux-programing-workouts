@@ -4,11 +4,16 @@
 #include <stdio.h>
 
 #include "include/log_msg_queue.h"
+#include "include/filesystem.h"
+
+#define WORK 0
+#define SHUTDOWN 1
 
 typedef struct log_desc 
 {
     log_message_queue *log_queue;
-    FILE               file_desc;
+    FILE              *file_desc;
+    atomic_int         shutdown_flag;
     
 } log_desc;
 

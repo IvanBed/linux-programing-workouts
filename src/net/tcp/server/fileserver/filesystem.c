@@ -56,8 +56,8 @@ void create_dir(char const *full_path)
 
 void copy_file(char const * dest_file, char const * src_file)
 {
-    FILE src_f;
-    FILE dest_f;
+    FILE *src_f;
+    FILE *dest_f;
     char file_buf[PAGESIZE];
     size_t index = 0;
 
@@ -98,7 +98,7 @@ void copy_file(char const * dest_file, char const * src_file)
 
 void delete(char const *file_name)
 {
-    if (remove(file) == 0) 
+    if (remove(file_name) == 0) 
         printf("File deleted successfully.\n");
     else 
         printf("Error: Unable to delete the file.\n");
