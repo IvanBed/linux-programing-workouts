@@ -186,7 +186,6 @@ int64_t main_loop(int server_sock, size_t max_connections, LogDesc *log_desc)
         if (FD_ISSET(p->pfd[0], &working_set)) 
         {  
             puts("A signal was caught");
-
             for (;;) 
             {
                 char ch;

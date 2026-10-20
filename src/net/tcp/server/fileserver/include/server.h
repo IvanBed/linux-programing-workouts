@@ -9,6 +9,7 @@
 //#include "log.h"
 
 #include <sys/select.h>
+#include <sys/types.h>
 #include <signal.h>
 #include <errno.h>
 #include <stdatomic.h>
