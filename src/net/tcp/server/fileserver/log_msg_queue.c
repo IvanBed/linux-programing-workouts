@@ -20,7 +20,7 @@ static void free_node(queue_node *node)
     free(node);
 }
 
-static log_message_queue *create_log_queue(size_t max_size) 
+log_message_queue *create_log_queue(size_t max_size) 
 {
     log_message_queue * log_queue = malloc(sizeof(log_message_queue));
     
@@ -45,7 +45,7 @@ static log_message_queue *create_log_queue(size_t max_size)
     return log_queue;
 }
 
-static void destroy_log_queue(log_message_queue *log_queue)
+void destroy_log_queue(log_message_queue *log_queue)
 {
     if (!log_queue)
     {

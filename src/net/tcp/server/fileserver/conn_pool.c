@@ -50,7 +50,7 @@ void destruct_conn_pool(ConnectionsPool *pool)
 {
     if (!pool)
     {
-
+        return;         
     }
 
     free(pool->connections);
@@ -82,7 +82,7 @@ static int64_t book_pos(int64_t *bitmap)
 {
     if (!bitmap)
     {
-
+        return; 
     }
    
     int mask = 1;
@@ -97,7 +97,7 @@ static void unbook_pos(int64_t *bitmap, int64_t offset)
 {
     if (!bitmap)
     {
-
+        return; 
     }    
     int mask = 1;
     mask <<= offset;
@@ -110,7 +110,7 @@ int64_t store_connection(ConnectionsPool *pool, pthread_t thread_id, int connect
     
     if (!pool)
     {
-
+        return NOT_OK; 
     }   
     if (pool->free_space_bitmap == 0)
     {
@@ -138,7 +138,7 @@ int64_t release_connection(ConnectionsPool *pool, int64_t offset)
 {
     if (!pool)
     {
-
+        return NOT_OK;
     } 
     ConnectionDesc *conn = pool->connections + offset;
     puts("!release_connection! unbook_pos");
@@ -160,7 +160,7 @@ int bitmap_contain(int64_t bitmap, int64_t offset)
     int64_t mask;
     if (!bitmap)
     {
-
+        return NOT_OK;
     }  
     mask = 1;
     mask <<= offset;
@@ -172,7 +172,7 @@ void print(ConnectionsPool *pool)
 {
     if (!pool)
     {
-
+        return;
     }  
 
     printf("pool->size %ld\n", pool->size);

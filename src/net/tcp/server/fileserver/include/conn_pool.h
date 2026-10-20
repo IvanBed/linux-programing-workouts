@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include "log.h"
+
 #define OK 1
 #define NOT_OK -1
 
@@ -28,11 +30,13 @@ typedef struct ConnectionsPool
     int64_t         free_space_bitmap; 
 } ConnectionsPool;
 
-typedef struct WorkerArgs
+/*typedef struct WorkerArgs
 {
     ConnectionsPool *connections_pool;
     int64_t          offset;
+    LogDesc         *log_desc;
 } WorkerArgs;
+*/
 
 int64_t store_connection(ConnectionsPool *store, pthread_t thread_id, int connection_sock);
 int64_t release_connection(ConnectionsPool *store, int64_t offset);

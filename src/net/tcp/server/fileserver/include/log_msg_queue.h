@@ -12,6 +12,7 @@
 #include <stdatomic.h>
 
 #define DEFAULT_MESSAGE_SIZE 4096
+#define DEFAULT_MESSAGE_METAINFO_SIZE 1024
 
 typedef enum  
 {
@@ -54,6 +55,8 @@ typedef struct log_message_queue
                         
 } log_message_queue;
 
+log_message_queue *create_log_queue(size_t max_size); 
+void destroy_log_queue(log_message_queue *log_queue);
 void push_message(log_message_queue *log_queue, message_desc const *msg_desc);
 void pop_message(log_message_queue *log_queue, message_desc *local_msg_desc);
 

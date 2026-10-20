@@ -6,6 +6,8 @@
 #include "include/os_layer.h"
 #include "include/conn_pool.h"
 
+#include "include/log.h"
+
 #include <sys/select.h>
 #include <signal.h>
 #include <errno.h>
@@ -29,6 +31,19 @@ typedef struct Pipe
     int    nfds;
 } Pipe;
 
+typedef struct WorkerArgs
+{
+    ConnectionsPool *connections_pool;
+    int64_t          offset;
+    LogDesc         *log_desc;
+} WorkerArgs;
+
+typedef struct LogWorkerArgs
+{
+    LogDesc    *log;
+    atomic_int *exit_signal;
+} LogWorkerArgs;
+
 static atomic_int exit_signal = 0;
 
 static Pipe *p; 
@@ -48,7 +63,7 @@ void signal_handler(int signal_num)
     puts("Flag exit_signal is TRUE.");
 }
 
-void serve_connection(int connection_sock)
+void serve_connection(int connection_sock, LogDesc *log_desc)
 {
     ssize_t        recv_cnt;
     char           request[BUFSIZE];
@@ -81,18 +96,22 @@ void serve_connection(int connection_sock)
 void* client_serving(void* data)
 {
     WorkerArgs     *args;
+
     ConnectionDesc conn_desc;
-    int64_t          release_res;
+    LogDesc       *log_des;
+    int64_t        release_res;
 
     if (!data)
     {
 
     }
     //puts("client serving");
-    args = (WorkerArgs*) data;
+    args      = (WorkerArgs*) data;
     conn_desc = args->connections_pool->connections[args->offset];
+    log_des   = args->log_desc;
+
     //puts("start service");
-    serve_connection(conn_desc.connection_sock);
+    serve_connection(conn_desc.connection_sock, log_des);
     pthread_mutex_lock(&(args->connections_pool->lock));
     //puts("release connection");
     release_res = release_connection(args->connections_pool, conn_desc.offset);
@@ -118,7 +137,6 @@ void wait_pthreads(ConnectionsPool *pool)
 int64_t start_client_serving_routin(ConnectionsPool *pool, WorkerArgs *args, int connection_sock)
 {
     pthread_t  thread_id;
-    int64_t    res = OK;
     int64_t    offset;
 
     puts("start_client_serving_routin");
@@ -126,13 +144,11 @@ int64_t start_client_serving_routin(ConnectionsPool *pool, WorkerArgs *args, int
     {
         return NOT_OK;
     }
-
     
     puts("store_connection");
     offset = store_connection(pool, thread_id, connection_sock);
     if (offset == NOT_OK)
     {
-        res = offset;
         return NOT_OK;
     } 
 
@@ -145,20 +161,41 @@ int64_t start_client_serving_routin(ConnectionsPool *pool, WorkerArgs *args, int
 
     pthread_detach(thread_id);
     
-    return res;
+    return OK;
 }
 
-void init_worker_args(WorkerArgs *args, size_t thread_limit, ConnectionsPool *pool)
+
+void init_worker_args(LogWorkerArgs *log_worker_args, LogDesc *log_desc)
+{
+    memset(log_worker_args, 0, sizeof(LogWorkerArg));
+    memcpy(log_worker_args->log_desc, log_desc, sizeof(LogDesc));
+    log_worker_args->exit_signal = 0;
+}
+
+void init_worker_args(WorkerArgs *args, size_t thread_limit, ConnectionsPool *pool, LogDesc *log_desc)
 {
     memset(args, 0, thread_limit * sizeof(WorkerArgs));
     for (size_t i = 0; i < thread_limit; i++)
     {
         args[i].connections_pool = pool;
         args[i].offset = i;
+        args[i].log_desc = log_desc;
     }
 }
 
-int64_t main_loop(int server_sock, size_t max_connections)
+int64_t start_log_routin(LogWorkerArg *log_worker_args)
+{
+    pthread_t  thread_id;
+    if (pthread_create(&thread_id, NULL, log_writer_routine, (void*)log_worker_args) != 0)
+    {
+        return NOT_OK;
+    }
+
+    pthread_detach(thread_id);
+    return OK;
+}
+
+int64_t main_loop(int server_sock, size_t max_connections, LogDesc *log_desc)
 {
     int               connection_sock;
     size_t            thread_indx = 0;
@@ -169,15 +206,15 @@ int64_t main_loop(int server_sock, size_t max_connections)
     WorkerArgs        args[THREAD_LIMIT];
     int               start_client_serving_res;
 
-
     pool = create_conn_pool(max_connections);
     if (!pool)
     {
         perror("Can not create connections pool");
+        //LOG_ERROR(log_desc, "Can not create connections pool");
         return NOT_OK;
     }
 
-    init_worker_args(args, THREAD_LIMIT, pool);
+    init_worker_args(args, THREAD_LIMIT, pool, log_desc);
     listen(server_sock, QEUEUSIZE);
     
     FD_SET(server_sock, &(p->readfds)); 
@@ -191,6 +228,7 @@ int64_t main_loop(int server_sock, size_t max_connections)
         fd_set working_set;  
         memcpy(&working_set, &(p->readfds), sizeof(p->readfds));   
         puts("Select!");     
+        //LOG_WRITE(log_desc, "Select!");
         while ((ready = select(p->nfds + 1, &working_set, NULL, NULL, NULL)) == -1 && errno == EINTR) 
         {
             continue;
@@ -201,7 +239,7 @@ int64_t main_loop(int server_sock, size_t max_connections)
             puts("A signal was caught");
 
             for (;;) 
-            {                      /* Consume bytes from pipe */
+            {
                 char ch;
                 if (read(p->pfd[0], &ch, 1) == -1) 
                 {
@@ -210,6 +248,7 @@ int64_t main_loop(int server_sock, size_t max_connections)
 
                 }
                 puts("goto end_loop");
+                //LOG_WRITE(log_desc, "goto end_loop");
                 goto end_loop;
             }
         }
@@ -229,6 +268,7 @@ int64_t main_loop(int server_sock, size_t max_connections)
                 start_client_serving_res = start_client_serving_routin(pool, args, connection_sock);
                 pthread_mutex_unlock(&(pool->lock));
                 puts("accept");
+                //LOG_WRITE(log_desc, "accept");
             }  
         }        
     }
@@ -287,6 +327,7 @@ int main(int argc, char **argv)
     int                server_sock;
     int                port;
     char              *ip_address;
+    char               current_dir[PATH_SIZE];
 
     if (argc < 2)
     {
@@ -301,24 +342,53 @@ int main(int argc, char **argv)
     else 
         ip_address = argv[2];
 
-
-    init_pipe();
-	
     //Переделать на новый обработчик
     signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
+
+    int64_t res = init_pipe();
+    if (res == NOT_OK)
+    {
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
+	 
+    getcwd(current_dir, PATH_SIZE); 
+    LogDesc *log_desc = create_log(current_dir, 1024);
+    if (!log_desc)
+    {
+        perror("socket");
+        free_pipe();
+        exit(EXIT_FAILURE);
+    }
     
+    res = start_log_routin(log_desc);
+    if (res == NOT_OK)
+    {
+        perror("pipe");
+        free_pipe();
+        destroy_log(log_desc);
+        exit(EXIT_FAILURE);
+    }    
+
     server_sock = create_server(ip_address, port);
     if (server_sock == -1)
     {
         perror("socket");
+        free_pipe();
+        destroy_log(log_desc);
         exit(EXIT_FAILURE);
     }
     puts("Start main loop!");
-    main_loop(server_sock, 16);
     
-    //shutdown(server_sock, SHUT_RDWR);
+    //log_write(LogDesc *ld, char * const message, int error, log_level level)
+    LOG_WRITE(log_desc, "Start main loop!");
+    puts("go futher!!");
+    main_loop(server_sock, 16, log_desc);
+    
+    shutdown(server_sock, SHUT_RDWR);
     free_pipe();
     close(server_sock);
+    destroy_log(log_desc);
     exit(EXIT_SUCCESS);
 }

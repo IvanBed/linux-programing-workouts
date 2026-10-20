@@ -1,6 +1,6 @@
 #include "include/log.h"
 
-void arch_logs(char const *log_dir)
+static void arch_logs(char const *log_dir)
 {
     char        arch_dir[PATH_SIZE];
     char const *pattern = "fileserver.log";
@@ -16,12 +16,12 @@ void arch_logs(char const *log_dir)
 
 }
 
-log_desc *create_log(char const *log_dir, size_t log_queue_size)
+LogDesc *create_log(char const *log_dir, size_t log_queue_size)
 {
     FILE *log_file;
     char log_name[PATH_SIZE];
 
-    log_desc * l = malloc(sizeof(log_desc));
+    LogDesc * l = malloc(sizeof(LogDesc));
     if (!l)
     {
         printf("Could not allocate memoru fo log desc\n");
@@ -49,7 +49,7 @@ log_desc *create_log(char const *log_dir, size_t log_queue_size)
 
 }
 
-void destroy_log(log_desc * log_inst)
+void destroy_log(LogDesc * log_inst)
 {
     fclose(log_inst->file_desc);
     destroy_log_queue(log_inst->log_queue);
@@ -57,11 +57,10 @@ void destroy_log(log_desc * log_inst)
 
 }
 
-void write_to_logfile(FILE *file, message_desc *msg_desc)
+static void write_to_logfile(FILE *file, message_desc *msg_desc)
 {
-    char file_buf[DEFAULT_MESSAGE_SIZE + 1024];
+    char file_buf[DEFAULT_MESSAGE_SIZE + DEFAULT_MESSAGE_METAINFO_SIZE];
     size_t index = 0;
-
 
     char time_buf[17];
     struct tm info = *localtime(&msg_desc->message_time);
@@ -69,12 +68,14 @@ void write_to_logfile(FILE *file, message_desc *msg_desc)
            info.tm_hour, info.tm_min);
 
     
-    sprintf(file_buf, "thread id: %ld %s %s %ld %ld", msg_desc->tid, time_buf, msg_desc->message, msg_desc->error_code, msg_desc->error_code);
+    sprintf(file_buf, "thread id: %ld %s %s %ld %ld\n", msg_desc->tid, time_buf, msg_desc->message, msg_desc->error_code, msg_desc->error_code);
+
+    fputs(file_buf, file);
 }
 
 void *log_writer_routine(void* data)
 {
-    log_desc *ld = data;
+    LogDesc *ld = data;
     message_desc *msg_desc = malloc(sizeof(message_desc));
 
     while(!ld->shutdown_flag)
@@ -86,7 +87,7 @@ void *log_writer_routine(void* data)
     free(msg_desc);
 }
 
-void log_write(log_desc *ld, char * const message, int error, log_level level)
+void log_write(LogDesc *ld, char * const message, int error, log_level level)
 {
     time_t current_timestamp = time(NULL);
     message_desc msg_desc;
@@ -95,8 +96,11 @@ void log_write(log_desc *ld, char * const message, int error, log_level level)
     msg_desc.error_code = error;
     msg_desc.level = level;
     msg_desc.message_time = current_timestamp;
-
-    pop_message(ld->log_queue, &msg_desc);
+    
+    // temp info
+    msg_desc.tid = 0;
+    
+    push_message(ld->log_queue, &msg_desc);
 }
 
 /*int main()
