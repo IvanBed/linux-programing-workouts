@@ -1,51 +1,5 @@
-/*#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>*/
-#include "include/net.h"
-#include "include/utils.h"
-#include "include/os_layer.h"
-#include "include/conn_pool.h"
-
-#include "include/log.h"
-
-#include <sys/select.h>
-#include <signal.h>
-#include <errno.h>
-#include <stdatomic.h>
-#include <fcntl.h>
-
-#define LOOPBACK "127.0.0.1"
-#define QEUEUSIZE 5
-#define MAX_ATTEMPS 100
-#define BUFSIZE 4096 * 2
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-
-#define THREAD_LIMIT 64
-
-// вынести в отдельный файл
-
-typedef struct Pipe
-{
-    int    pfd[2];
-    fd_set readfds;
-    int    nfds;
-} Pipe;
-
-typedef struct WorkerArgs
-{
-    ConnectionsPool *connections_pool;
-    int64_t          offset;
-    LogDesc         *log_desc;
-} WorkerArgs;
-
-typedef struct LogWorkerArgs
-{
-    LogDesc    *log;
-    atomic_int *exit_signal;
-} LogWorkerArgs;
-
+#include "include/server.h"
 static atomic_int exit_signal = 0;
-
 static Pipe *p; 
 
 void signal_handler(int signal_num)
@@ -63,7 +17,7 @@ void signal_handler(int signal_num)
     puts("Flag exit_signal is TRUE.");
 }
 
-void serve_connection(int connection_sock, LogDesc *log_desc)
+void serve_connection(ConnectionDesc *conn_desc, LogDesc *log_desc)
 {
     ssize_t        recv_cnt;
     char           request[BUFSIZE];
@@ -75,18 +29,19 @@ void serve_connection(int connection_sock, LogDesc *log_desc)
 
     memset(request, 0, BUFSIZE);
 
-    recv_cnt = read(connection_sock, request, BUFSIZE);
+    recv_cnt = read(conn_desc->connection_sock, request, BUFSIZE);
     args = parse_request(request, &args_cnt);
     op = get_op_type(args[0]);
-
+  
+    printf("request: %s | %s\n", args[0], args[1]);
+    
     switch (op) 
     {
         case GET: 
-            printf("request: %s | %s\n", args[0], args[1]);
-            send_file(connection_sock, args[1]);
+            send_file(conn_desc->connection_sock, args[1]);
             break;
         case POST:
-            get_file(connection_sock, args[1], args[2]);
+            get_file(conn_desc->connection_sock, args[1], args[2]);
             break;  
         default:
     }      
@@ -98,27 +53,30 @@ void* client_serving(void* data)
     WorkerArgs     *args;
 
     ConnectionDesc conn_desc;
-    LogDesc       *log_des;
+    LogDesc       *log_desc;
     int64_t        release_res;
+    pthread_t      tid;
+    tid = gettid();
 
     if (!data)
     {
-
+        LOG_WRITE_ERROR_THREAD(log_desc, tid, "Data pointer in client_serving function is NULL, stop the routine");
+        return NULL;
     }
-    //puts("client serving");
+    
     args      = (WorkerArgs*) data;
     conn_desc = args->connections_pool->connections[args->offset];
-    log_des   = args->log_desc;
-
-    //puts("start service");
-    serve_connection(conn_desc.connection_sock, log_des);
+    log_desc  = args->log_desc;
+    LOG_WRITE_THREAD(log_desc, tid, "client serving"); 
+    LOG_WRITE_THREAD(log_desc, tid, "start service"); 
+    serve_connection(&conn_desc, log_desc);
     pthread_mutex_lock(&(args->connections_pool->lock));
-    //puts("release connection");
+    LOG_WRITE_THREAD(log_desc, tid, "release connection");
     release_res = release_connection(args->connections_pool, conn_desc.offset);
-    //puts("pthread_mutex_unlock");
+    LOG_WRITE_THREAD(log_desc, tid, "pthread_mutex_unlock");
     pthread_mutex_unlock(&(args->connections_pool->lock));
-    //puts("pthread_mutex_unlock ok!");
-    return 0;
+    //puts("pthread_mutex_unlock ok!");   
+    return NULL;
 }
 
 void wait_pthreads(ConnectionsPool *pool)
@@ -164,14 +122,6 @@ int64_t start_client_serving_routin(ConnectionsPool *pool, WorkerArgs *args, int
     return OK;
 }
 
-
-void init_worker_args(LogWorkerArgs *log_worker_args, LogDesc *log_desc)
-{
-    memset(log_worker_args, 0, sizeof(LogWorkerArg));
-    memcpy(log_worker_args->log_desc, log_desc, sizeof(LogDesc));
-    log_worker_args->exit_signal = 0;
-}
-
 void init_worker_args(WorkerArgs *args, size_t thread_limit, ConnectionsPool *pool, LogDesc *log_desc)
 {
     memset(args, 0, thread_limit * sizeof(WorkerArgs));
@@ -183,16 +133,15 @@ void init_worker_args(WorkerArgs *args, size_t thread_limit, ConnectionsPool *po
     }
 }
 
-int64_t start_log_routin(LogWorkerArg *log_worker_args)
+pthread_t start_log_routin(LogDesc *log_desc)
 {
     pthread_t  thread_id;
-    if (pthread_create(&thread_id, NULL, log_writer_routine, (void*)log_worker_args) != 0)
+    if (pthread_create(&thread_id, NULL, log_writer_routine, (void*)log_desc) != 0)
     {
         return NOT_OK;
     }
 
-    pthread_detach(thread_id);
-    return OK;
+    return thread_id;
 }
 
 int64_t main_loop(int server_sock, size_t max_connections, LogDesc *log_desc)
@@ -328,6 +277,7 @@ int main(int argc, char **argv)
     int                port;
     char              *ip_address;
     char               current_dir[PATH_SIZE];
+    pthread_t          log_worker_tid;
 
     if (argc < 2)
     {
@@ -362,8 +312,8 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     
-    res = start_log_routin(log_desc);
-    if (res == NOT_OK)
+    log_worker_tid = start_log_routin(log_desc);
+    if (log_worker_tid == NOT_OK)
     {
         perror("pipe");
         free_pipe();
@@ -386,9 +336,12 @@ int main(int argc, char **argv)
     puts("go futher!!");
     main_loop(server_sock, 16, log_desc);
     
+    LOG_WRITE(log_desc, "Stop main loop!"); 
     shutdown(server_sock, SHUT_RDWR);
     free_pipe();
     close(server_sock);
+    log_desc->shutdown_flag = 1;
+    pthread_join(log_worker_tid, NULL);
     destroy_log(log_desc);
     exit(EXIT_SUCCESS);
 }

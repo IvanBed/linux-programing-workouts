@@ -36,10 +36,4 @@ typedef struct WorkerArgs
     LogDesc         *log_desc;
 } WorkerArgs;
 
-typedef struct LogWorkerArgs
-{
-    LogDesc    *log_desc;
-    atomic_int *exit_signal;
-} LogWorkerArgs;
-
 #endif

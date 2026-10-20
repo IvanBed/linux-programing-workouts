@@ -82,7 +82,7 @@ static int64_t book_pos(int64_t *bitmap)
 {
     if (!bitmap)
     {
-        return; 
+        return -1; 
     }
    
     int mask = 1;

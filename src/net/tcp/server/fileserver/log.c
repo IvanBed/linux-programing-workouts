@@ -21,18 +21,18 @@ LogDesc *create_log(char const *log_dir, size_t log_queue_size)
     FILE *log_file;
     char log_name[PATH_SIZE];
 
-    LogDesc * l = malloc(sizeof(LogDesc));
-    if (!l)
+    LogDesc *log_desc = malloc(sizeof(LogDesc));
+    if (!log_desc)
     {
         printf("Could not allocate memoru fo log desc\n");
         return NULL;
     }
     
-    log_message_queue * lq = create_log_queue(log_queue_size); 
-    if (!lq)
+    log_message_queue * log_queue = create_log_queue(log_queue_size); 
+    if (!log_queue)
     {
         printf("Could not allocate memoru fo log message queue\n");
-        free(l);
+        free(log_desc);
         return NULL;
     }
 
@@ -41,20 +41,18 @@ LogDesc *create_log(char const *log_dir, size_t log_queue_size)
     snprintf(log_name, PATH_SIZE, "%s/%s.%ld\0", log_dir, "fileserver.log", (unsigned long)time(NULL));
     log_file = fopen(log_name, "w");
 
-    l->log_queue = lq;
-    l->file_desc = log_file;
-    l->shutdown_flag = WORK; 
+    log_desc->log_queue = log_queue;
+    log_desc->file_desc = log_file;
+    log_desc->shutdown_flag = WORK; 
 
-    return l;
-
+    return log_desc;
 }
 
-void destroy_log(LogDesc * log_inst)
+void destroy_log(LogDesc * log_desc)
 {
-    fclose(log_inst->file_desc);
-    destroy_log_queue(log_inst->log_queue);
-    free(log_inst);
-
+    fclose(log_desc->file_desc);
+    destroy_log_queue(log_desc->log_queue);
+    free(log_desc);
 }
 
 static void write_to_logfile(FILE *file, message_desc *msg_desc)
@@ -68,9 +66,10 @@ static void write_to_logfile(FILE *file, message_desc *msg_desc)
            info.tm_hour, info.tm_min);
 
     
-    sprintf(file_buf, "thread id: %ld %s %s %ld %ld\n", msg_desc->tid, time_buf, msg_desc->message, msg_desc->error_code, msg_desc->error_code);
+    sprintf(file_buf, "thread id: %ld date: %s message: %s error code: %ld %ld\n", msg_desc->tid, time_buf, msg_desc->message, msg_desc->error_code, msg_desc->level);
 
     fputs(file_buf, file);
+    fflush (file);
 }
 
 void *log_writer_routine(void* data)
@@ -87,7 +86,7 @@ void *log_writer_routine(void* data)
     free(msg_desc);
 }
 
-void log_write(LogDesc *ld, char * const message, int error, log_level level)
+void log_write(LogDesc *log_desc, char * const message, int error, log_level level)
 {
     time_t current_timestamp = time(NULL);
     message_desc msg_desc;
@@ -100,22 +99,21 @@ void log_write(LogDesc *ld, char * const message, int error, log_level level)
     // temp info
     msg_desc.tid = 0;
     
-    push_message(ld->log_queue, &msg_desc);
+    push_message(log_desc->log_queue, &msg_desc);
 }
 
-/*int main()
+void log_write_thread(LogDesc *log_desc, pthread_t tid, char * const message, int error, log_level level)
 {
-    log_message_queue *log_queue = create_log_queue(1024);
-    
-    add_tail(log_queue, new_node("1",1,1));
-    add_tail(log_queue, new_node("2",1,1));
-    add_tail(log_queue, new_node("3",1,1));
-    delete_head(log_queue);
-    delete_head(log_queue);
-    delete_head(log_queue);
-    
-    print_queue(log_queue);
+    time_t current_timestamp = time(NULL);
+    message_desc msg_desc;
 
-    destroy_log_queue(log_queue);
-    return 0;
-}*/
+    memcpy(&msg_desc.message, message, DEFAULT_MESSAGE_SIZE);
+    msg_desc.error_code = error;
+    msg_desc.level = level;
+    msg_desc.message_time = current_timestamp;
+    
+    // temp info
+    msg_desc.tid = tid;
+    
+    push_message(log_desc->log_queue, &msg_desc);
+}
