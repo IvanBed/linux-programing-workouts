@@ -8,6 +8,7 @@
 
 #define WORK 0
 #define SHUTDOWN 1
+#define LOG_QUEUE_SIZE
 
 typedef struct log_desc 
 {

@@ -36,11 +36,11 @@ void close_file(FileInfo *file_info)
 bool check_dir(char const *dir_path)
 {
     DIR* dir = opendir(dir_path);
-    if (dir) 
+    if (dir)
     {
         closedir(dir);
         return true;
-    } 
+    }
     else
         return false;
 }
@@ -51,7 +51,7 @@ void create_dir(char const *full_path)
     {
         return;
     }
-    int result = mkdir(full_path, 0666);
+    int result = mkdir(full_path, 0755);
 }
 
 void copy_file(char const * dest_file, char const * src_file)
@@ -64,21 +64,23 @@ void copy_file(char const * dest_file, char const * src_file)
     src_f = fopen(src_file, "r");
     if (!src_f)
     {
+        printf("Could not open source file");
         return;
     }
 
     dest_f = fopen(dest_file, "w");
     if (!dest_f)
     {
-        fclose(src_f);
+        printf("Could not open destination file");
+                fclose(src_f);
         return;
     }
-    
+
     memset(file_buf, 0, PAGESIZE);
 
     while (!feof(src_f))
     {
-        if (ferror(src_f)) 
+        if (ferror(src_f))
         {
             printf("File Error\n");
             break;
@@ -91,16 +93,16 @@ void copy_file(char const * dest_file, char const * src_file)
             memset(file_buf, 0, PAGESIZE);
         }
     }
-    
+
     fclose(src_f);
     fclose(dest_f);
 }
 
-void delete(char const *file_name)
+void delete_file(char const *file_name)
 {
-    if (remove(file_name) == 0) 
+    if (remove(file_name) == 0)
         printf("File deleted successfully.\n");
-    else 
+    else
         printf("Error: Unable to delete the file.\n");
 
 }
@@ -112,6 +114,9 @@ void move_file(char const * dest_dir_path, char const * src_dir_path, char const
 
     snprintf(new_file_path, PATH_SIZE, "%s/%s\0", dest_dir_path, file_name);
     snprintf(old_file_path, PATH_SIZE, "%s/%s\0", src_dir_path, file_name);
+
+    printf("new file %s\n", new_file_path);
+    printf("old file %s\n", old_file_path);
 
     copy_file(new_file_path, old_file_path);
     delete_file(old_file_path);
@@ -125,18 +130,19 @@ void move_files_to_dir(char const *src_dir_path, char const *dest_dir_path, char
     {
         printf("Could not open directory: %s, please check syntex correctness\n", src_dir_path);
         return;
-    }    
+    }
 
     struct dirent *dir_entry = NULL;
 
     while ((dir_entry = readdir(dir)) != NULL)
     {
-        if (strcmpn(dir_entry->d_name, pattern, char_cnt) == 0)
+        if (strncmp(dir_entry->d_name, pattern, char_cnt) == 0)
         {
             move_file(dest_dir_path, src_dir_path, dir_entry->d_name);
         }
     }
-    
-    closedir(dir);
 
+    closedir(dir);
 }
+
+

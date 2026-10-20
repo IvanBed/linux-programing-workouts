@@ -5,8 +5,8 @@ void arch_logs(char const *log_dir)
     char        arch_dir[PATH_SIZE];
     char const *pattern = "fileserver.log";
 
-    snprintf(arch_dir, PATH_SIZE, "%s/%s\0", arch_dir, "arch");
-
+    snprintf(arch_dir, PATH_SIZE, "%s/%s\0", log_dir, "arch");
+    puts(arch_dir);
     if (!check_dir(arch_dir))
     {
         create_dir(arch_dir);
@@ -16,7 +16,7 @@ void arch_logs(char const *log_dir)
 
 }
 
-log_desc *create_log(char const *log_dir)
+log_desc *create_log(char const *log_dir, size_t log_queue_size)
 {
     FILE *log_file;
     char log_name[PATH_SIZE];
@@ -25,20 +25,20 @@ log_desc *create_log(char const *log_dir)
     if (!l)
     {
         printf("Could not allocate memoru fo log desc\n");
-        return;
+        return NULL;
     }
     
-    log_message_queue * lq = create_log_queue(1024); 
+    log_message_queue * lq = create_log_queue(log_queue_size); 
     if (!lq)
     {
         printf("Could not allocate memoru fo log message queue\n");
         free(l);
-        return;
+        return NULL;
     }
 
     arch_logs(log_dir);
 
-    snprintf(log_name, PATH_SIZE, "%s/s.%ld\0", log_dir, "fileserver.log", (unsigned long)time(NULL));
+    snprintf(log_name, PATH_SIZE, "%s/%s.%ld\0", log_dir, "fileserver.log", (unsigned long)time(NULL));
     log_file = fopen(log_name, "w");
 
     l->log_queue = lq;
@@ -51,7 +51,7 @@ log_desc *create_log(char const *log_dir)
 
 void destroy_log(log_desc * log_inst)
 {
-    close(log_inst->file_desc);
+    fclose(log_inst->file_desc);
     destroy_log_queue(log_inst->log_queue);
     free(log_inst);
 
