@@ -38,7 +38,8 @@ typedef struct ConnectionsPool
 } WorkerArgs;
 */
 
-int64_t store_connection(ConnectionsPool *store, pthread_t thread_id, int connection_sock);
+int64_t store_connection(ConnectionsPool *store, int connection_sock);
+pthread_t *get_tid_pos(ConnectionsPool *pool, size_t offset);
 int64_t release_connection(ConnectionsPool *store, int64_t offset);
 ConnectionsPool *create_conn_pool(size_t size);
 void destruct_conn_pool(ConnectionsPool *store);

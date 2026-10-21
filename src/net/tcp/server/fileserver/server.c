@@ -33,8 +33,7 @@ void serve_connection(ConnectionDesc *conn_desc, LogDesc *log_desc)
     args = parse_request(request, &args_cnt);
     op = get_op_type(args[0]);
   
-    printf("request: %s | %s\n", args[0], args[1]);
-    
+    //LOG_WRITE_THREAD(log_desc, tid, fprintf("request: %s | %s\n", args[0], args[1]);); 
     switch (op) 
     {
         case GET: 
@@ -45,6 +44,7 @@ void serve_connection(ConnectionDesc *conn_desc, LogDesc *log_desc)
             break;  
         default:
     }      
+    puts("free_args_list");
     free_args_list(args, args_cnt);
 }
 
@@ -55,18 +55,19 @@ void* client_serving(void* data)
     ConnectionDesc conn_desc;
     LogDesc       *log_desc;
     int64_t        release_res;
-    pthread_t      tid;
-    tid = gettid();
-
+    
     if (!data)
     {
-        LOG_WRITE_ERROR_THREAD(log_desc, tid, "Data pointer in client_serving function is NULL, stop the routine");
-        return NULL;
+        LOG_WRITE_ERROR_THREAD(log_desc, conn_desc.thread_id, "Data pointer in client_serving function is NULL, stop the routine");
+        pthread_exit(NULL);
     }
     
     args      = (WorkerArgs*) data;
     conn_desc = args->connections_pool->connections[args->offset];
     log_desc  = args->log_desc;
+
+    pid_t tid = *((pid_t*)(((char*)conn_desc.thread_id + 720)));
+
     LOG_WRITE_THREAD(log_desc, tid, "client serving"); 
     LOG_WRITE_THREAD(log_desc, tid, "start service"); 
     serve_connection(&conn_desc, log_desc);
@@ -75,8 +76,8 @@ void* client_serving(void* data)
     release_res = release_connection(args->connections_pool, conn_desc.offset);
     LOG_WRITE_THREAD(log_desc, tid, "pthread_mutex_unlock");
     pthread_mutex_unlock(&(args->connections_pool->lock));
-    //puts("pthread_mutex_unlock ok!");   
-    return NULL;
+    
+    pthread_exit(NULL);
 }
 
 void wait_pthreads(ConnectionsPool *pool)
@@ -94,8 +95,8 @@ void wait_pthreads(ConnectionsPool *pool)
 
 int64_t start_client_serving_routin(ConnectionsPool *pool, WorkerArgs *args, int connection_sock)
 {
-    pthread_t  thread_id;
-    int64_t    offset;
+    pthread_t  *thread_id_ptr;
+    int64_t     offset;
 
     puts("start_client_serving_routin");
     if (!pool)
@@ -104,21 +105,26 @@ int64_t start_client_serving_routin(ConnectionsPool *pool, WorkerArgs *args, int
     }
     
     puts("store_connection");
-    offset = store_connection(pool, thread_id, connection_sock);
+    offset = store_connection(pool, connection_sock);
     if (offset == NOT_OK)
     {
         return NOT_OK;
     } 
 
+    thread_id_ptr = get_tid_pos(pool, offset);
+    if (!thread_id_ptr)
+    {
+        return NOT_OK;
+    }
+
     puts("pthread create");
-    if (pthread_create(&thread_id, NULL, client_serving, (void*)(&args[offset])) != 0)
+    if (pthread_create(thread_id_ptr, NULL, client_serving, (void*)(&args[offset])) != 0)
     {
         release_connection(pool, offset);
         return NOT_OK;
     }
 
-    pthread_detach(thread_id);
-    
+    pthread_detach(*thread_id_ptr);
     return OK;
 }
 
@@ -203,6 +209,7 @@ int64_t main_loop(int server_sock, size_t max_connections, LogDesc *log_desc)
 
         if (FD_ISSET(server_sock, &working_set)) 
         {
+            puts("accept");
             connection_sock = accept(server_sock, NULL, NULL);
             //FD_SET(connection_sock, &working_set);
             if (connection_sock != -1) 
@@ -215,7 +222,7 @@ int64_t main_loop(int server_sock, size_t max_connections, LogDesc *log_desc)
 
                 start_client_serving_res = start_client_serving_routin(pool, args, connection_sock);
                 pthread_mutex_unlock(&(pool->lock));
-                puts("accept");
+                
                 //LOG_WRITE(log_desc, "accept");
             }  
         }        

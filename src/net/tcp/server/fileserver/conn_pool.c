@@ -104,7 +104,7 @@ static void unbook_pos(int64_t *bitmap, int64_t offset)
     *bitmap |= mask;
 }
 
-int64_t store_connection(ConnectionsPool *pool, pthread_t thread_id, int connection_sock)
+int64_t store_connection(ConnectionsPool *pool, int connection_sock)
 {
     int64_t offset;
     
@@ -125,13 +125,22 @@ int64_t store_connection(ConnectionsPool *pool, pthread_t thread_id, int connect
     }
     
     ConnectionDesc conn;
-    conn.thread_id = thread_id;
     conn.connection_sock = connection_sock;
     conn.offset = offset;
     
     memcpy(pool->connections + offset, &conn, sizeof(ConnectionDesc));
   
     return offset;
+}
+
+pthread_t *get_tid_pos(ConnectionsPool *pool, size_t offset)
+{
+    if (!pool)
+    {
+        return NULL; 
+    }   
+
+    return &pool->connections[offset].thread_id;
 }
 
 int64_t release_connection(ConnectionsPool *pool, int64_t offset)
