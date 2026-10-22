@@ -35,7 +35,7 @@ void send_file_old(int connection_sock, char const * file_path)
     size_t    index;
     size_t    read_bytes;
     
-    ssize_t   send_res;
+    ssize_t   send_cnt;
 
     memset(resp, 0, PAGESIZE);
     memset(file_buf, 0, PAGESIZE);
@@ -46,8 +46,8 @@ void send_file_old(int connection_sock, char const * file_path)
 
     if (!file_info)
     {
-        send_res = send(connection_sock, ERR_MSG1, sizeof(ERR_MSG1), MSG_NOSIGNAL);
-        if (send_res == -1)
+        send_cnt = send(connection_sock, ERR_MSG1, sizeof(ERR_MSG1), MSG_NOSIGNAL);
+        if (send_cnt == -1)
             goto error_exit;
         
         printf("%s]n", file_path);
@@ -57,8 +57,8 @@ void send_file_old(int connection_sock, char const * file_path)
     else
     {
         puts("OK");
-        send_res = send(connection_sock, OK_MSG, sizeof(OK_MSG), MSG_NOSIGNAL);
-        if (send_res == -1)
+        send_cnt = send(connection_sock, OK_MSG, sizeof(OK_MSG), MSG_NOSIGNAL);
+        if (send_cnt == -1)
             goto error_exit;
     }
     
@@ -71,8 +71,8 @@ void send_file_old(int connection_sock, char const * file_path)
     }
 
     printf("File size %s\n", file_info->file_size_str); 
-    send_res = send(connection_sock, file_info->file_size_str, strlen(file_info->file_size_str), 0);
-    if (send_res == -1)
+    send_cnt = send(connection_sock, file_info->file_size_str, strlen(file_info->file_size_str), 0);
+    if (send_cnt == -1)
         goto error_exit;
 
     index = 0;
@@ -88,8 +88,8 @@ void send_file_old(int connection_sock, char const * file_path)
         
         if (index == PAGESIZE)
         {
-            send_res = send(connection_sock, file_buf, PAGESIZE, MSG_NOSIGNAL);    
-            if (send_res == -1)
+            send_cnt = send(connection_sock, file_buf, PAGESIZE, MSG_NOSIGNAL);    
+            if (send_cnt == -1)
             {
                 perror("Socket is close by client"); 
                 close_file(file_info);
@@ -102,8 +102,8 @@ void send_file_old(int connection_sock, char const * file_path)
     puts("Send file2");
     if (index > 1)
     {
-        send_res = send(connection_sock, file_buf, index - 1, MSG_NOSIGNAL);
-        if (send_res == -1)
+        send_cnt = send(connection_sock, file_buf, index - 1, MSG_NOSIGNAL);
+        if (send_cnt == -1)
             goto error_exit;
     }
 
@@ -123,73 +123,64 @@ void send_file(int connection_sock, char const * file_path)
     char      resp[PAGESIZE];
     FileInfo *file_info;
 
-    size_t    index;
-    size_t    read_bytes;
-    
-    ssize_t   send_res;
+    size_t    read_cnt;
+    size_t    total_cnt;
+    ssize_t   send_cnt;
 
     memset(resp, 0, PAGESIZE);
     memset(file_buf, 0, PAGESIZE);
 
     file_info = open_file(file_path);
 
-    printf("socket %d\n", connection_sock);
-
     if (!file_info)
     {
-        send_res = send(connection_sock, ERR_MSG1, sizeof(ERR_MSG1), MSG_NOSIGNAL);
-        if (send_res == -1)
-            goto error_exit;
-        
-        printf("%s]n", file_path);
-        perror("Can not open file");
-        return;
+        send_cnt = send(connection_sock, ERR_MSG1, sizeof(ERR_MSG1), MSG_NOSIGNAL);
+        goto error_exit;
     } 
     else
     {
         puts("OK");
-        send_res = send(connection_sock, OK_MSG, sizeof(OK_MSG), MSG_NOSIGNAL);
-        if (send_res == -1)
+        send_cnt = send(connection_sock, OK_MSG, sizeof(OK_MSG), MSG_NOSIGNAL);
+        if (send_cnt == -1)
             goto error_exit;
     }
     
     recv(connection_sock, resp, PAGESIZE, 0);
     if (strncmp(resp, "STOP\n", 4) == 0) 
     {
-        perror("Stop send file to this client");
-        //close_file(file_info);
-        return;
+        printf("Stop send file to this client\n");
+        goto error_exit;
     }
 
     printf("File size %s\n", file_info->file_size_str); 
-    send_res = send(connection_sock, file_info->file_size_str, strlen(file_info->file_size_str), 0);
-    if (send_res == -1)
+    send_cnt = send(connection_sock, file_info->file_size_str, strlen(file_info->file_size_str), 0);
+    if (send_cnt == -1)
         goto error_exit;
 
-    index = 0;
-    puts("Send file1"); 
+    puts("Send file1");
+    total_cnt = 0; 
     while (!feof(file_info->file))
     {
         if (ferror(file_info->file)) 
         {
             printf("File Error\n");
-            break;
-        }
-        read_cnt = fread(file_buf, sizeof(char), PAGESIZE, file_info->file);
-        send_res = send(connection_sock, file_buf, read_cnt, MSG_NOSIGNAL);    
-        if (send_res == -1)
-        {
             goto error_exit;
         }
+        read_cnt = fread(file_buf, sizeof(char), PAGESIZE, file_info->file);
+        send_cnt = send(connection_sock, file_buf, read_cnt, MSG_NOSIGNAL);    
+        if (send_cnt == -1)
+            goto error_exit;
+        
+        total_cnt += send_cnt;
         //memset(file_buf, 0, PAGESIZE); 
     }
 
-    printf("Send %ld bytes\n", index - 1);
+    printf("Sent %ld bytes\n", total_cnt);
     close_file(file_info);
     return;
 
 error_exit:
-    perror("Socket is close by client"); 
+    perror(""); 
     close_file(file_info);
     return; 
 }
@@ -197,7 +188,38 @@ error_exit:
 
 void get_file(int connection_sock, char const * file_path, char const * dest_path)
 {
+    char      file_buf[PAGESIZE];
+    char      resp[PAGESIZE];
+    FileInfo *file_info;
+
+    size_t    write_cnt;
+    ssize_t   recv_cnt;
+    ssize_t   send_cnt;
+
+    memset(resp, 0, PAGESIZE);
+    memset(file_buf, 0, PAGESIZE);
+
+    file_info = create_file(file_path);
+    if (!file_info)
+    {
+        send_cnt = send(connection_sock, ERR_MSG2, sizeof(ERR_MSG2), MSG_NOSIGNAL);
+        goto error_exit;
+    } 
+    else
+    {
+        puts("OK");
+        send_cnt = send(connection_sock, OK_MSG, sizeof(OK_MSG), MSG_NOSIGNAL);
+        if (send_cnt == -1)
+            goto error_exit;
+    }
+
+    while()
+    {
 
 
+
+    }
+
+    
 }
 

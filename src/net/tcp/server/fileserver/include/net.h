@@ -4,6 +4,7 @@
 #define HELLO "hello\n"
 #define ENOUGH 64
 #define ERR_MSG1 "Can not open file\n"
+#define ERR_MSG2 "Can create file on server\n"
 #define OK_MSG "OK\n"
 #define PAGESIZE 4096
 
