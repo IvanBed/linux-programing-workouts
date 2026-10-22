@@ -26,7 +26,7 @@ int create_server(char const *ip_address, int port)
 }
 
 //Добавить результат работы
-void send_file(int connection_sock, char const * file_path)
+void send_file_old(int connection_sock, char const * file_path)
 {
     char      file_buf[PAGESIZE];
     char      resp[PAGESIZE];
@@ -116,6 +116,84 @@ error_exit:
     close_file(file_info);
     return; 
 }
+
+void send_file(int connection_sock, char const * file_path)
+{
+    char      file_buf[PAGESIZE];
+    char      resp[PAGESIZE];
+    FileInfo *file_info;
+
+    size_t    index;
+    size_t    read_bytes;
+    
+    ssize_t   send_res;
+
+    memset(resp, 0, PAGESIZE);
+    memset(file_buf, 0, PAGESIZE);
+
+    file_info = open_file(file_path);
+
+    printf("socket %d\n", connection_sock);
+
+    if (!file_info)
+    {
+        send_res = send(connection_sock, ERR_MSG1, sizeof(ERR_MSG1), MSG_NOSIGNAL);
+        if (send_res == -1)
+            goto error_exit;
+        
+        printf("%s]n", file_path);
+        perror("Can not open file");
+        return;
+    } 
+    else
+    {
+        puts("OK");
+        send_res = send(connection_sock, OK_MSG, sizeof(OK_MSG), MSG_NOSIGNAL);
+        if (send_res == -1)
+            goto error_exit;
+    }
+    
+    recv(connection_sock, resp, PAGESIZE, 0);
+    if (strncmp(resp, "STOP\n", 4) == 0) 
+    {
+        perror("Stop send file to this client");
+        //close_file(file_info);
+        return;
+    }
+
+    printf("File size %s\n", file_info->file_size_str); 
+    send_res = send(connection_sock, file_info->file_size_str, strlen(file_info->file_size_str), 0);
+    if (send_res == -1)
+        goto error_exit;
+
+    index = 0;
+    puts("Send file1"); 
+    while (!feof(file_info->file))
+    {
+        if (ferror(file_info->file)) 
+        {
+            printf("File Error\n");
+            break;
+        }
+        read_cnt = fread(file_buf, sizeof(char), PAGESIZE, file_info->file);
+        send_res = send(connection_sock, file_buf, read_cnt, MSG_NOSIGNAL);    
+        if (send_res == -1)
+        {
+            goto error_exit;
+        }
+        //memset(file_buf, 0, PAGESIZE); 
+    }
+
+    printf("Send %ld bytes\n", index - 1);
+    close_file(file_info);
+    return;
+
+error_exit:
+    perror("Socket is close by client"); 
+    close_file(file_info);
+    return; 
+}
+
 
 void get_file(int connection_sock, char const * file_path, char const * dest_path)
 {

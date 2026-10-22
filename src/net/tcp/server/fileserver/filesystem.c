@@ -19,11 +19,25 @@ FileInfo *open_file(char const * file_path)
     file_info->file = fopen(file_path, "rb");
     if (!file_info->file)
     {
-        return 0;
+        return NULL;
     }
 
     file_info->file_size = get_file_size(file_info->file);
     sprintf(file_info->file_size_str, "%ld\n", file_info->file_size);
+    return file_info;
+}
+
+FileInfo *create_file(char const * file_path)
+{
+    FileInfo *file_info = (FileInfo*)malloc(sizeof(FileInfo));
+    memset(file_info, 0, sizeof(FileInfo));
+    
+    file_info->file = fopen(file_path, "wb");
+    if (!file_info->file)
+    {
+        return NULL;
+    }
+    sprintf(file_info->file_size_str, "%ld\n", 0);
     return file_info;
 }
 
@@ -72,7 +86,7 @@ void copy_file(char const * dest_file, char const * src_file)
     if (!dest_f)
     {
         printf("Could not open destination file");
-                fclose(src_f);
+        fclose(src_f);
         return;
     }
 
@@ -94,6 +108,50 @@ void copy_file(char const * dest_file, char const * src_file)
         }
     }
 
+    if (index > 1)
+    {
+        fwrite(file_buf, sizeof(char),  index - 1, dest_f);
+    }
+
+    fclose(src_f);
+    fclose(dest_f);
+}
+
+void copy_file_new(char const * dest_file, char const * src_file)
+{
+    FILE *src_f;
+    FILE *dest_f;
+    char file_buf[PAGESIZE];
+    size_t read_cnt = 0;
+
+    src_f = fopen(src_file, "r");
+    if (!src_f)
+    {
+        printf("Could not open source file");
+        return;
+    }
+
+    dest_f = fopen(dest_file, "w");
+    if (!dest_f)
+    {
+        printf("Could not open destination file");
+        fclose(src_f);
+        return;
+    }
+
+    memset(file_buf, 0, PAGESIZE);
+
+    while(!feof(src_f)) 
+    {
+        if (ferror(src_f)) 
+        {
+            printf("File Error\n");
+            break;
+        }
+        read_cnt = fread(file_buf, sizeof(char), PAGESIZE, src_f);
+        fwrite(file_buf, sizeof(char), read_cnt, dest_f);  
+        //memset(file_buf, 0, PAGESIZE); 
+    } 
     fclose(src_f);
     fclose(dest_f);
 }

@@ -26,6 +26,7 @@ typedef struct FileInfo
 } FileInfo;
 
 FileInfo *open_file(char const * file_path);
+FileInfo *create_file(char const * file_path);
 void close_file(FileInfo *file_info);
 
 bool check_dir(char const *dir_path);

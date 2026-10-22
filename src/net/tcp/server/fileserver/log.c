@@ -84,6 +84,7 @@ void *log_writer_routine(void* data)
         write_to_logfile(ld->file_desc, msg_desc);
     }
     free(msg_desc);
+    pthread_exit()
 }
 
 void log_write(LogDesc *log_desc, char * const message, int error, log_level level)

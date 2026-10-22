@@ -80,7 +80,7 @@ void* client_serving(void* data)
     pthread_exit(NULL);
 }
 
-void wait_pthreads(ConnectionsPool *pool)
+void wait_routines(ConnectionsPool *pool)
 {
     pthread_mutex_lock(&(pool->lock));
     while (!pool_is_free(pool)) 
@@ -93,12 +93,12 @@ void wait_pthreads(ConnectionsPool *pool)
     pthread_mutex_unlock(&(pool->lock));
 }
 
-int64_t start_client_serving_routin(ConnectionsPool *pool, WorkerArgs *args, int connection_sock)
+int64_t start_client_serving_routine(ConnectionsPool *pool, WorkerArgs *args, int connection_sock)
 {
     pthread_t  *thread_id_ptr;
     int64_t     offset;
 
-    puts("start_client_serving_routin");
+    puts("start_client_serving_routine");
     if (!pool)
     {
         return NOT_OK;
@@ -139,7 +139,7 @@ void init_worker_args(WorkerArgs *args, size_t thread_limit, ConnectionsPool *po
     }
 }
 
-pthread_t start_log_routin(LogDesc *log_desc)
+pthread_t start_log_routine(LogDesc *log_desc)
 {
     pthread_t  thread_id;
     if (pthread_create(&thread_id, NULL, log_writer_routine, (void*)log_desc) != 0)
@@ -220,7 +220,7 @@ int64_t main_loop(int server_sock, size_t max_connections, LogDesc *log_desc)
                     pthread_cond_wait(&(pool->is_free_cond), &(pool->lock));
                 }
 
-                start_client_serving_res = start_client_serving_routin(pool, args, connection_sock);
+                start_client_serving_res = start_client_serving_routine(pool, args, connection_sock);
                 pthread_mutex_unlock(&(pool->lock));
                 
                 //LOG_WRITE(log_desc, "accept");
@@ -228,7 +228,7 @@ int64_t main_loop(int server_sock, size_t max_connections, LogDesc *log_desc)
         }        
     }
 end_loop:
-    wait_pthreads(pool);
+    wait_routines(pool);
     destruct_conn_pool(pool);
     return OK;
 }
@@ -318,7 +318,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     
-    log_worker_tid = start_log_routin(log_desc);
+    log_worker_tid = start_log_routine(log_desc);
     if (log_worker_tid == NOT_OK)
     {
         perror("pipe");
