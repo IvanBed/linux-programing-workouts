@@ -5,7 +5,7 @@
 
 #define DEFAULT_TAG_LEN 16
 
-typdef byte unsigned char;
+typdef unsigned char byte;
 
 bool decrypt_aes128(char const *key, char const *iv, char const *data)
 {
@@ -13,12 +13,12 @@ bool decrypt_aes128(char const *key, char const *iv, char const *data)
      
 }
 
-unsigned char* encrypt_aes128(char const *key, char const *iv, char const *data, size_t data_len)
+byte* encrypt_aes128(byte const *key, byte const *iv, byte const *data, size_t data_len)
 {
     gcry_cipher_hd_t  hd;
-    unsigned char    *cipher;
+    byte             *cipher;
     void             *tag;
-    unsigned char    *encrypted_data
+    byte             *encrypted_data
 
     gcry_error_t      err;
 
@@ -27,20 +27,21 @@ unsigned char* encrypt_aes128(char const *key, char const *iv, char const *data,
     size_t            cipher_len;
     size_t            tag_len;
     size_t            total_len;
+    size_T            offset = 0;
 
-    key_len = strlen(key);
-    iv_len  = strlen(iv);
+    key_len    = strlen(key);
+    iv_len     = strlen(iv);
     cipher_len = data_len;
-    tag_len = DEFAULT_TAG_LEN;
+    tag_len    = DEFAULT_TAG_LEN;
 
     total_len = iv_len + cipher_len + tag_len;
 
-
-    cipher         = (unsigned char*) malloc(cipher_len * sizeof(unsigned char));
-    tag            = (unsigned char*) malloc(tag * sizeof(unsigned char));
-    encrypted_data = (unsigned char*) malloc(total_len * sizeof(unsigned char));
+    cipher         = (byte*) malloc(cipher_len * sizeof(byte));
+    tag            = (void*) malloc(tag * sizeof(byte));
+    encrypted_data = (byte*) malloc(total_len * sizeof(byte));
     
     memset(encrypted_data, 0, total_len);
+    memcpy(encrypted_data, iv, iv_len);
 
     err = gcry_cipher_open(&hd, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_GCM, 0);  
     if (err)
@@ -65,11 +66,16 @@ unsigned char* encrypt_aes128(char const *key, char const *iv, char const *data,
     {
 
     }
-    err = gcry_cipher_gettag (hd, tag, 16);
+    err = gcry_cipher_gettag (hd, tag, tag_len);
     if (err)
     {
 
     }
+    offset += iv_len;
+    memcpy(encrypted_data + offset, cipher, cipher_len);
+    offset += cipher_len
+    memcpy(encrypted_data + offset, tag, tag_len);
+
     free(cipher);
     free(tag);
     return encrypted_data;
