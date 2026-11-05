@@ -1,0 +1,81 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <gcrypt.h>
+
+#define DEFAULT_TAG_LEN 16
+
+typdef byte unsigned char;
+
+bool decrypt_aes128(char const *key, char const *iv, char const *data)
+{
+    char *decrypted_data
+     
+}
+
+unsigned char* encrypt_aes128(char const *key, char const *iv, char const *data, size_t data_len)
+{
+    gcry_cipher_hd_t  hd;
+    unsigned char    *cipher;
+    void             *tag;
+    unsigned char    *encrypted_data
+
+    gcry_error_t      err;
+
+    size_t            key_len;
+    size_t            iv_len;
+    size_t            cipher_len;
+    size_t            tag_len;
+    size_t            total_len;
+
+    key_len = strlen(key);
+    iv_len  = strlen(iv);
+    cipher_len = data_len;
+    tag_len = DEFAULT_TAG_LEN;
+
+    total_len = iv_len + cipher_len + tag_len;
+
+
+    cipher         = (unsigned char*) malloc(cipher_len * sizeof(unsigned char));
+    tag            = (unsigned char*) malloc(tag * sizeof(unsigned char));
+    encrypted_data = (unsigned char*) malloc(total_len * sizeof(unsigned char));
+    
+    memset(encrypted_data, 0, total_len);
+
+    err = gcry_cipher_open(&hd, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_GCM, 0);  
+    if (err)
+    {
+
+    }
+
+    err = gcry_cipher_setkey(hd, key, key_len);
+    if (err)
+    {
+
+    }
+    
+    err = gcry_cipher_setiv(hd, iv, iv_len);
+    if (err)
+    {
+
+    }
+
+    err = gcry_cipher_encrypt(hd, cipher, cipher_len, data, cipher_len);
+    if (err)
+    {
+
+    }
+    err = gcry_cipher_gettag (hd, tag, 16);
+    if (err)
+    {
+
+    }
+    free(cipher);
+    free(tag);
+    return encrypted_data;
+
+err_end:   
+    free(cipher);
+    free(tag);
+    return NULL;
+}
