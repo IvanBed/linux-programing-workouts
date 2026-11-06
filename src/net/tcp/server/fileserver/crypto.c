@@ -2,14 +2,69 @@
 #include <stdlib.h>
 #include <string.h>
 #include <gcrypt.h>
+#include <stdint.h>
 
 #define DEFAULT_TAG_LEN 16
+#define DEFAULT_NONCE_LEN 12
+typdef uint8_t byte;
 
-typdef unsigned char byte;
+typedef struct encrypted_data_desc 
+{
+    byte *iv;
+    byte *data;
+    
+} encryptedDataDesc;
 
-byte *decrypt_aes128(byte const *key, byte const *iv, byte const *data, size_t data_len)
+typdef struct session_desc 
 {
     gcry_cipher_hd_t  hd;
+} 
+
+void init_lib(){
+
+    if (!gcry_check_version (GCRYPT_VERSION))
+    {
+        fputs ("libgcrypt version mismatch\n", stderr);
+        exit (2);
+    }
+         
+    gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
+
+    gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
+
+    gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
+
+    gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
+}
+
+gcry_cipher_hd_t create_AES128GCM_handle()
+{
+    gcry_cipher_hd_t  hd;
+    err = gcry_cipher_open(&hd, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_GCM, 0);  
+    if (err)
+    {
+        return -1;    
+    }
+    return hd; 
+}
+
+inline byte *create_init_vector()
+{
+    byte *init_vector = malloc(DEFAULT_NONCE_LEN);
+    if (!init_vector)
+        return NULL;
+    gcry_create_nonce(init_vector, DEFAULT_NONCE_LEN);
+    return init_vector;
+}
+
+inline void destroy_init_vector(byte *init_vector)
+{
+    free(init_vector);
+}
+
+byte *decrypt_aes128(gcry_cipher_hd_t  hd, byte const *key, byte const *iv, byte const *data, size_t data_len)
+{
+    
     byte             *decrypted_data
 
     gcry_error_t      err;
@@ -26,12 +81,6 @@ byte *decrypt_aes128(byte const *key, byte const *iv, byte const *data, size_t d
     
     memset(decrypted_data, 0, decrypted_data);
 
-    err = gcry_cipher_open(&hd, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_GCM, 0);  
-    if (err)
-    {
-
-    }
-
     err = gcry_cipher_setkey(hd, key, key_len);
     if (err)
     {
@@ -44,7 +93,7 @@ byte *decrypt_aes128(byte const *key, byte const *iv, byte const *data, size_t d
 
     }
 
-    err = gcry_cipher_encrypt(hd, decrypted_data, decrypted_data, data, data_len);
+    err = gcry_cipher_decrypt(hd, decrypted_data, decrypted_data_len, data, data_len);
     if (err)
     {
 
@@ -82,7 +131,7 @@ void decrypt_aes128_buffer(byte *decrypted_data, size_t decrypted_data_len, byte
 
     }
 
-    err = gcry_cipher_encrypt(hd, decrypted_data, decrypted_data, data, data_len);
+    err = gcry_cipher_decrypt(hd, decrypted_data, decrypted_data_len, data, data_len);
     if (err)
     {
 
