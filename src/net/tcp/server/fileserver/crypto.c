@@ -18,7 +18,24 @@ typedef struct encrypted_data_desc
 typdef struct session_desc 
 {
     gcry_cipher_hd_t  hd;
-} 
+} Session;
+
+void open_session(gcry_cipher_hd_t hd, char const * key)
+{
+
+
+}
+
+void close_session(gcry_cipher_hd_t hd)
+{
+
+}
+
+void set_init_vector(gcry_cipher_hd_t hd)
+{
+
+
+}
 
 void init_lib(){
 
