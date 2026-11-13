@@ -16,22 +16,14 @@ typdef struct bytes
     size_t len;
 } BytesHandle;
 
-typedef struct encrypted_payload_desc 
-{
-    byte   iv[64];
-    byte  *ciphertext;
-    byte   tag[64];
-    size_t ciphertext_len;
-} EncryptedPlayloadDesc;
-
-typdef struct session_desc 
+typdef struct sym_session_desc 
 {
     gcry_cipher_hd_t  hd;
     byte             *key;
     size_t            key_len;
     size_t            iv_len;
     size_t            tag_len;
-} SessionDesc;
+} SymSessionDesc;
 
 void init_lib(){
 
@@ -61,9 +53,9 @@ gcry_cipher_hd_t create_AES128GCM_handle()
     return hd; 
 }
 
-SessionDesc *open_cipher_session(char const * key, size_t key_len, size_t nonce_len, size_t tag_len)
+SymSessionDesc *open_sym_cipher_session_fromkey(char const * key, size_t key_len, size_t nonce_len, size_t tag_len)
 {
-    SessionDesc *session = malloc(sizeof(SessionDesc));
+    SymSessionDesc *session = malloc(sizeof(SymSessionDesc));
     if (!session)
     {
         printf("");
@@ -89,7 +81,7 @@ SessionDesc *open_cipher_session(char const * key, size_t key_len, size_t nonce_
     return session;
 }
 
-void close_cipher_session(SessionDesc *session)
+void close_sym_cipher_session(SymSessionDesc *session)
 {
     gcry_cipher_close(session->hd);
     free(session->hd);
@@ -112,7 +104,7 @@ void parse_encrypted_playload(byte *encrypted_payload, size_t encrypted_payload_
 }
 
 
-size_t decrypt_aes128_buffer(SessionDesc const *cipher_session, byte const *encrypted_payload, size_t encrypted_payload_len, byte *plaintext, size_t plaintext_buff_size)
+size_t decrypt_aes128_buffer(SymSessionDesc const *cipher_session, byte const *encrypted_payload, size_t encrypted_payload_len, byte *plaintext, size_t plaintext_buff_size)
 {
     byte        *ciphertext;
     byte        *tag;
@@ -145,7 +137,7 @@ size_t decrypt_aes128_buffer(SessionDesc const *cipher_session, byte const *encr
     return plaintext_len;
 }
 
-size_t encrypt_aes128_buffer(SessionDesc const *cipher_session, byte const *plaintext, size_t plaintext_len, byte *encrypted_playload, size_t encrypted_playload_buff_size)
+size_t encrypt_aes128_buffer(SymSessionDesc const *cipher_session, byte const *plaintext, size_t plaintext_len, byte *encrypted_playload, size_t encrypted_playload_buff_size)
 {
     size_t            ciphertext_len;
     size_t            offset = 0;
