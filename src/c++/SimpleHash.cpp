@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -58,6 +57,18 @@ int get_decimal_digit_from_hex_char(char hex_char)
     }
 }
 
+
+int64_t hex_to_decimal(std::string const & hex_num)
+{
+    int64_t res_num     = 0;
+    size_t  start_pos   = hex_num.size() - 1;
+    for(size_t power = 0; power < hex_num.size(); power++)
+    {
+       res_num += (int64_t) std::pow(16, power) * get_decimal_digit_from_hex_char(toupper(hex_num[start_pos - power]));
+    }
+    return res_num;
+}
+
 std::string bytes_to_hex(std::vector<int16_t> const &bytes)
 {
     std::string hex_res = "";
@@ -68,21 +79,17 @@ std::string bytes_to_hex(std::vector<int16_t> const &bytes)
     return hex_stream.str();
 }
 
-int64_t hex_to_decimal_new(std::string const & hex_str)
+std::vector<int16_t> hex_to_bytes(std::string const & hex_str)
 {
-    int64_t res_num = 0;
-    int64_t decimal_value = 0;
+    std::vector<int16_t> res;
+    
     std::stringstream ss;
-    for (size_t i = 1; i < hex_str; i += 2)
+    for (size_t i = 1; i < hex_str.size(); i += 2)
     {
-       ss << hex_value;
-       ss >> std::hex >> decimal_value;
-       res_num += decimal_value;
+       res.push_back(stoul(hex_str.substr(i - 1, 2), 0, 16));
     }
-     // std::string hex_value
-    
-    
-    return res_num;
+ 
+    return res;
 }
 
 void init_bytes_hash(std::vector<int16_t> const &bytes, std::vector<int16_t> &bytes_hash, size_t output_size)
@@ -123,29 +130,6 @@ std::vector<int16_t> simple_hash_32(std::vector<int16_t> const &bytes)
     return simple_hash_internal(bytes, 4);
 }
 
-int16_t hex_to_decimal(std::string const & hex_num)
-{
-    int16_t res_num     = 0;
-    size_t  start_pos   = hex_num.size() - 1;
-    for(size_t power = 0; power < hex_num.size(); power++)
-    {
-       res_num += (int16_t) std::pow(16, power) * get_decimal_digit_from_hex_char(toupper(hex_num[start_pos - power]));
-    }
-    return res_num;
-}
-
-std::vector<int16_t> hex_to_bytes(std::string const & hex_str)
-{
-    std::vector<int16_t> res;
-    std::string hex_byte;
-    for (size_t i = 1; i < hex_str.size(); i += 2)
-    {
-        hex_byte = hex_str.substr(i - 1, 2);
-        //std::cout << "hex " << hex_byte << "\n";
-        res.push_back(hex_to_decimal(hex_byte));
-    }
-    return res;
-}
 
 std::vector<int16_t> string_to_bytes(std::string const & str)
 {
@@ -155,36 +139,103 @@ std::vector<int16_t> string_to_bytes(std::string const & str)
         res.push_back((int16_t)str[i]);
     }
     return res;
-
+    
 }
 
-void vector_concat(std::vector<int16_t> &v1, std::vector<int16_t> const & v2)
+void alignment(std::vector<int16_t> &bytes, size_t target_size)
 {
+    for (size_t i = 0; i < target_size - bytes.size(); i++)
+    {
+        bytes.push_back(0);
+    }
+}
+
+void vector_concat(std::vector<int16_t> &v1, std::vector<int16_t> & v2,  size_t target_size)
+{
+    for(size_t i = 0; i < target_size - v1.size(); i++)
+    {
+        v1.push_back(v2[i]);
+        v2[i] = 0;
+    }
     v1.insert(v1.end(), v2.begin(), v2.end());
+}
+
+void print_vector(std::vector<int16_t> &v)
+{
+    for (size_t i = 0; i < v.size(); i++)
+    {
+        std::cout << v[i] << " ";
+    }
+    std::cout << "\n";
+}
+
+std::vector<int16_t> prepare_data(std::vector<int16_t> &bytes)
+{
+    std::vector<int16_t> res = simple_hash_32(bytes);
+    return res;
+}
+
+int16_t bruteforce(int16_t data_byte, int16_t hash_byte)
+{
+    for (int16_t nonce_byte = 0; nonce_byte < 256; nonce_byte++)
+    {
+        if ((data_byte ^ nonce_byte) == hash_byte)
+        {
+            return nonce_byte;
+        }
+    }
+    return -1;
+}
+
+std::vector<int16_t> find_nonce(std::vector<int16_t> &prepared_data, std::vector<int16_t> &hash)
+{
+    std::vector<int16_t> res;
+    size_t counter = 4;
+    int16_t val    = 0;
+    for (size_t i = 0; i < prepared_data.size(); i++)
+    {
+        val = bruteforce(prepared_data[i], hash[i]);
+        if (val == 0)
+           counter++;
+        else if (val == -1)
+        {
+            while(counter > 0 || )
+        } 
+        res.push_back();
+    }
+    return res;
 }
 
 int main()
 {
-    std::string hex_str = "10fb149810a2d51234";
-    std::string hex_str2 = "0xyz";
-    std::vector<int16_t> str_bytes = hex_to_bytes(hex_str);
-    std::vector<int16_t> str_bytes2 = string_to_bytes(hex_str2);
-
+    std::string hash = "45a060c5";
+    std::string str = "1234diGi";
+    std::string nonce = "10fb1498";
+    /*std::vector<int16_t> str_bytes = string_to_bytes(str);
+    std::vector<int16_t> nonce_bytes = hex_to_bytes(nonce);
     for (size_t i = 0; i < str_bytes.size(); i++)
     {
         std::cout << str_bytes[i] << " ";
 
     }
-    std::cout << "\n";
+    std::cout << std::endl;
+    vector_concat(str_bytes, nonce_bytes, 8);
     std::vector<int16_t> res = simple_hash_32(str_bytes);
-    std::string hex_res = bytes_to_hex(res);
+    print_vector(str_bytes);
     for (size_t i = 0; i < res.size(); i++)
-   {
+    {
         std::cout << res[i] << " ";
 
     }
-    std::cout << std::endl;
-    std::cout << hex_res << "\n";
-    std::cout << hex_to_decimal(hex_res) << "\n";
+    std::cout << bytes_to_hex(res) << std::endl;*/
+    std::vector<int16_t> str_bytes = string_to_bytes(str);
+    std::vector<int16_t> hash_bytes = hex_to_bytes(hash);
+    std::vector<int16_t> prepared_data = prepare_data(str_bytes);
+    std::vector<int16_t> nonce_bytes = find_nonce(prepared_data, hash_bytes);  
+    for (size_t i = 0; i < nonce_bytes.size(); i++)
+    {
+        std::cout << nonce_bytes[i] << " ";
 
+    }
+    std::cout << std::endl << bytes_to_hex(res) << std::endl;
 }
