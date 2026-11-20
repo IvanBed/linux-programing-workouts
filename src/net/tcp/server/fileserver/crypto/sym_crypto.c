@@ -25,22 +25,6 @@ typdef struct sym_session_desc
     size_t            tag_len;
 } SymSessionDesc;
 
-void init_lib(){
-
-    if (!gcry_check_version (GCRYPT_VERSION))
-    {
-        fputs ("libgcrypt version mismatch\n", stderr);
-        exit (2);
-    }
-         
-    gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
-
-    gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
-
-    gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
-
-    gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
-}
 
 gcry_cipher_hd_t create_AES128GCM_handle()
 {

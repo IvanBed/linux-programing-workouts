@@ -25,6 +25,26 @@ int create_server(char const *ip_address, int port)
     return server_sock; 
 }
 
+int send_data()
+{
+
+}
+
+int send_data_secure()
+{
+    
+}
+
+int recive_data()
+{
+
+}
+
+int recive_data_secure()
+{
+    
+}
+
 //Добавить результат работы
 void send_file_old(int connection_sock, char const * file_path)
 {

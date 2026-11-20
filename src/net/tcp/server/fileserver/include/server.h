@@ -1,10 +1,10 @@
 #ifndef SERVER_H
 
 #define SERVER_H
-#include "net.h"
+
 #include "utils.h"
 #include "os_layer.h"
-#include "conn_pool.h"
+#include "conn.h"
 
 //#include "log.h"
 

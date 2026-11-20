@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 
 #include "filesystem.h"
+#include "/crypto/include/cipher.h"
 
 void init_addr_ipinet(struct sockaddr_in *addr, char const *ip, int port);
 void send_file(int connection_sock, char const * file_path);

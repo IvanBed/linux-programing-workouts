@@ -13,9 +13,15 @@
 #define OK 1
 #define NOT_OK -1
 
+typdef enum conn_type
+{
+} ConnType;
+
 typedef struct ConnectionDesc 
 {
     pthread_t       thread_id;
+    ConnType        conn_type;
+    CipeherDesc     cipher_desc;   
     int             connection_sock;
     int64_t         offset;
 } ConnectionDesc;
